@@ -1,2 +1,5 @@
 CXX = g++
-CXXFLAGS = -pedantic -Wall -Wextra -Werror
+CXXFLAGS = -std=c++11 -O3 -pedantic -Wall -Wextra -Werror
+
+do: src/main.cpp
+	$(CXX) $(CXXFLAGS) src/* -o proj-asa
