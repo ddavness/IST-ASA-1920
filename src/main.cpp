@@ -15,7 +15,7 @@ public:
 	static void printLinkedList(LinkedList* );
 
 	int data;
-	LinkedList* next;
+	LinkedList* next = nullptr;
 };
 
 class Graph
@@ -75,7 +75,12 @@ Graph::Graph(int nodes, int connections)
 	: numNodes(nodes), numConnections(connections)
 {
 	this->nodes = new int[nodes];
-	this->connections = new LinkedList*[connections];
+	this->connections = new LinkedList*[nodes];
+
+	for(int i = 0; i < numConnections; i++)
+	{
+		this->connections[i] = nullptr;
+	}
 }
 
 Graph::~Graph()
