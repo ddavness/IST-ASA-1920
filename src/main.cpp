@@ -222,18 +222,29 @@ int main()
     return 0;
 }
 
-void visit(Graph& g, int node, bool* explored, void (*visitor)(Graph&, int, int))
+enum NodeState {
+    VIRGIN,
+    REACHED,
+    EXPLORED
+};
+
+void visit(Graph& g, int node, NodeState* explored, void (*visitor)(Graph&, int, int))
 {
     LinkedList* connection = g.getConnections(node);
     while (connection)
     {
         int child = connection->data;
+        //cout << child << endl;
         visitor(g, node, child);
-        visit(g, child, explored, visitor);
+        if (explored[child] == VIRGIN)
+        {
+            explored[child] = REACHED;
+            visit(g, child, explored, visitor);
+        }
         connection = connection->next;
     }
 
-    explored[node] = true;
+    explored[node] = EXPLORED;
 }
 
 void performSearchOver(Graph& g, void (*visitor)(Graph&, int, int))
@@ -241,20 +252,20 @@ void performSearchOver(Graph& g, void (*visitor)(Graph&, int, int))
     int nodes = g.getNumNodes();
 
     // Initialize tracking array
-    bool* explored = new bool[nodes];
+    NodeState* explored = new NodeState[nodes];
     for (int i = 0; i < nodes; i++)
     {
-        explored[i] = false;
+        explored[i] = VIRGIN;
     }
 
     for (int i = 0; i < nodes; i++)
     {
-        if (explored[i])
+        if (explored[i] == EXPLORED)
         {
             continue;
+        } else {
+            visit(g, i, explored, visitor);
         }
-
-        visit(g, i, explored, visitor);
     }
 
     delete[] explored;
