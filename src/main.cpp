@@ -32,7 +32,6 @@ public:
     LinkedList* getConnections(int );
 
     int getNumNodes();
-    int getNumConnections();
 
     static void printGraph(Graph& );
 
@@ -126,7 +125,7 @@ LinkedList* Graph::getConnections(int node)
     return connections[node];
 }
 
-int Graph::getNumConnections()
+int Graph::getNumNodes()
 {
     return numNodes;
 }
@@ -222,13 +221,32 @@ int main()
     return 0;
 }
 
-void visit(Graph& g, int node, void (*visitor)(Graph&, int, int))
-{}
+void visit(Graph& g, int node, bool* explored, void (*visitor)(Graph&, int, int))
+{
+    LinkedList* connection = g.getConnections(node);
+    while (connection->hasNext())
+    {
+        int child = connection->data;
+        visitor(g, node, child);
+        visit(g, child, explored, visitor);
+    }
+
+    explored[node] = true;
+}
 
 void performSearchOver(Graph& g, void (*visitor)(Graph&, int, int))
 {
     int nodes = g.getNumNodes();
     bool* explored = new bool[nodes];
+    for (int i = 0; i < nodes; i++)
+    {
+        if (explored[i])
+        {
+            continue;
+        }
+
+        visit(g, i, explored, visitor);
+    }
 }
 
 void maxGrade(Graph& g, int studentFrom, int studentTo)
