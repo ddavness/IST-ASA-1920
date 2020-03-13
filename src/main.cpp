@@ -154,7 +154,7 @@ void graph_sanity_test()
      *   v  /
      *   2 <
      */
-    Graph g(3, 3);
+    Graph g(16, 16);
 
     // Creating grades
     g.setGrade(0, 10);
@@ -173,8 +173,8 @@ void graph_sanity_test()
 
 // Main method
 int main() {
-    //linkedlist_sanity_test();
-    //graph_sanity_test();
+    // linkedlist_sanity_test();
+    // graph_sanity_test();
 
     // Read contents from stdin
     // How many students? What kind of relationships?
@@ -186,14 +186,16 @@ int main() {
     int grade;
     int studentFrom, studentTo;
 
+    Graph students(numStudents, numChains);
+
     for (int i = 0; i < numStudents; i++) {
         cin >> grade;
-        cout << grade << endl;
+        students.setGrade(i, grade);
     }
     for (int i = 0; i < numChains; i++) {
         cin >> studentFrom;
         cin >> studentTo;
-        cout << "Student " << studentFrom << " is sharing answers with student " << studentTo << endl;
+        students.addConnection(studentFrom, studentTo);
     }
 
     return 0;
