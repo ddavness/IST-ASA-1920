@@ -6,36 +6,36 @@ using namespace std;
 class LinkedList
 {
 public:
-	LinkedList();
-	LinkedList(int );
-	~LinkedList();
+    LinkedList();
+    LinkedList(int );
+    ~LinkedList();
 
-	bool hasNext();
+    bool hasNext();
 
-	static void printLinkedList(LinkedList* );
+    static void printLinkedList(LinkedList* );
 
-	int data;
-	LinkedList* next = nullptr;
+    int data;
+    LinkedList* next = nullptr;
 };
 
 class Graph
 {
 public:
-	Graph(int , int );
-	~Graph();
+    Graph(int , int );
+    ~Graph();
 
-	void setGrade(int , int );
-	void addConnection(int , int );
+    void setGrade(int , int );
+    void addConnection(int , int );
 
-	int getGrade(int );
-	LinkedList* getConnections(int );
+    int getGrade(int );
+    LinkedList* getConnections(int );
 
-	static void printGraph(Graph& );
+    static void printGraph(Graph& );
 
 private:
-	int numNodes, numConnections;
-	int* nodes;
-	LinkedList** connections;
+    int numNodes, numConnections;
+    int* nodes;
+    LinkedList** connections;
 };
 
 
@@ -43,92 +43,92 @@ private:
 LinkedList::LinkedList() {}
 
 LinkedList::LinkedList(int data)
-	: data(data) {}
+    : data(data) {}
 
 LinkedList::~LinkedList()
 {
-	cout << "LinkedList being deleted" << endl;
-	delete next;
+    cout << "LinkedList being deleted" << endl;
+    delete next;
 }
 
 bool LinkedList::hasNext()
 {
-	return next != nullptr;
+    return next != nullptr;
 }
 
 void LinkedList::printLinkedList(LinkedList* ll)
 {
-	if(ll == nullptr) {
-		cout << endl;
-		return;
-	}
+    if(ll == nullptr) {
+        cout << endl;
+        return;
+    }
 
-	while(ll->hasNext()) {
-		cout << ll->data << " -> ";
-		ll = ll->next;
-	}
+    while(ll->hasNext()) {
+        cout << ll->data << " -> ";
+        ll = ll->next;
+    }
 
-	cout << ll->data << endl;
+    cout << ll->data << endl;
 }
 
 Graph::Graph(int nodes, int connections)
-	: numNodes(nodes), numConnections(connections)
+    : numNodes(nodes), numConnections(connections)
 {
-	this->nodes = new int[nodes];
-	this->connections = new LinkedList*[nodes];
+    this->nodes = new int[nodes];
+    this->connections = new LinkedList*[nodes];
 
-	for(int i = 0; i < nodes; i++)
-	{
-		this->nodes[i] = 0;
-		this->connections[i] = nullptr;
-	}
+    for(int i = 0; i < nodes; i++)
+    {
+        this->nodes[i] = 0;
+        this->connections[i] = nullptr;
+    }
 }
 
 Graph::~Graph()
 {
-	cout << "Graph being deleted" << endl;
-	delete[] nodes;
+    cout << "Graph being deleted" << endl;
+    delete[] nodes;
 
-	// We need to delete each LinkedList*
-	for(int i = 0; i < numNodes; i++)
-	{
-		delete connections[i];
-	}
-	delete[] connections;
+    // We need to delete each LinkedList*
+    for(int i = 0; i < numNodes; i++)
+    {
+        delete connections[i];
+    }
+    delete[] connections;
 }
 
 void Graph::setGrade(int node, int grade)
 {
-	nodes[node] = grade;
+    nodes[node] = grade;
 }
 
 void Graph::addConnection(int node, int to)
 {
-	// Make the new LL at the start
-	LinkedList* ll = new LinkedList(to);
-	ll->next = connections[node];
+    // Make the new LL at the start
+    LinkedList* ll = new LinkedList(to);
+    ll->next = connections[node];
 
-	// Add it as root
-	connections[node] = ll;
+    // Add it as root
+    connections[node] = ll;
 }
 
 int Graph::getGrade(int node)
 {
-	return nodes[node];
+    return nodes[node];
 }
 
 LinkedList* Graph::getConnections(int node)
 {
-	return connections[node];
+    return connections[node];
 }
 
 void Graph::printGraph(Graph& g)
 {
-	for(int i = 0; i < g.numNodes; i++)
-	{
-		cout << "(" << g.getGrade(i) << ") " << i + 1 << ": ";
-		LinkedList::printLinkedList(g.getConnections(i));
-	}
+    for(int i = 0; i < g.numNodes; i++)
+    {
+        cout << "(" << g.getGrade(i) << ") " << i + 1 << ": ";
+        LinkedList::printLinkedList(g.getConnections(i));
+    }
 }
 
 
