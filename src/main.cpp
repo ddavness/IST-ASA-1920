@@ -198,5 +198,12 @@ int main() {
         students.addConnection(studentFrom, studentTo);
     }
 
+    // TODO: Process graph
+
+    // Dump graph contents here
+    for (int i = 0; i < numStudents; i++) {
+        cout << students.getGrade(i) << endl;
+    }
+
     return 0;
 }
