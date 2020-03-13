@@ -79,6 +79,7 @@ Graph::Graph(int nodes, int connections)
 
 	for(int i = 0; i < nodes; i++)
 	{
+		this->nodes[i] = 0;
 		this->connections[i] = nullptr;
 	}
 }
