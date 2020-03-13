@@ -197,7 +197,7 @@ int main()
     for (int i = 0; i < numChains; i++) {
         cin >> studentFrom;
         cin >> studentTo;
-        students.addConnection(studentFrom, studentTo);
+        students.addConnection(studentFrom - 1, studentTo - 1);
     }
 
     // TODO: Process graph
