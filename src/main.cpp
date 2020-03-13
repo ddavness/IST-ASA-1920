@@ -222,6 +222,9 @@ int main()
     return 0;
 }
 
+void visit(Graph& g, int node, void (*visitor)(Graph&, int, int))
+{}
+
 void performSearchOver(Graph& g, void (*visitor)(Graph&, int, int))
 {
     int nodes = g.getNumNodes();
