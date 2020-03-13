@@ -77,8 +77,9 @@ Graph::Graph(int nodes, int connections)
 	this->nodes = new int[nodes];
 	this->connections = new LinkedList*[nodes];
 
-	for(int i = 0; i < numConnections; i++)
+	for(int i = 0; i < nodes; i++)
 	{
+		this->nodes[i] = 0;
 		this->connections[i] = nullptr;
 	}
 }
@@ -89,7 +90,7 @@ Graph::~Graph()
 	delete[] nodes;
 
 	// We need to delete each LinkedList*
-	for(int i = 0; i < numConnections; i++)
+	for(int i = 0; i < numNodes; i++)
 	{
 		delete connections[i];
 	}
@@ -154,7 +155,7 @@ void graph_sanity_test()
      *   v  /
      *   2 <
      */
-    Graph g(16, 16);
+    Graph g(16, 32);
 
     // Creating grades
     g.setGrade(0, 10);
@@ -172,9 +173,10 @@ void graph_sanity_test()
 
 
 // Main method
-int main() {
-    // linkedlist_sanity_test();
-    // graph_sanity_test();
+int main()
+{
+    linkedlist_sanity_test();
+    graph_sanity_test();
 
     // Read contents from stdin
     // How many students? What kind of relationships?
@@ -195,7 +197,7 @@ int main() {
     for (int i = 0; i < numChains; i++) {
         cin >> studentFrom;
         cin >> studentTo;
-        students.addConnection(studentFrom, studentTo);
+        students.addConnection(studentFrom - 1, studentTo - 1);
     }
 
     // TODO: Process graph
