@@ -1,3 +1,4 @@
+#include <cmath>
 #include <iostream>
 
 using namespace std;
@@ -29,6 +30,9 @@ public:
 
     int getGrade(int );
     LinkedList* getConnections(int );
+
+    int getNumNodes();
+    int getNumConnections();
 
     static void printGraph(Graph& );
 
@@ -122,6 +126,11 @@ LinkedList* Graph::getConnections(int node)
     return connections[node];
 }
 
+int Graph::getNumConnections()
+{
+    return numNodes;
+}
+
 void Graph::printGraph(Graph& g)
 {
     for(int i = 0; i < g.numNodes; i++)
@@ -171,6 +180,9 @@ void graph_sanity_test()
     Graph::printGraph(g);
 }
 
+void performSearchOver(Graph&, void (Graph&, int, int));
+
+void maxGrade(Graph&, int, int);
 
 // Main method
 int main()
@@ -200,7 +212,7 @@ int main()
         students.addConnection(studentFrom - 1, studentTo - 1);
     }
 
-    // TODO: Process graph
+    performSearchOver(students, maxGrade);
 
     // Dump graph contents here
     for (int i = 0; i < numStudents; i++) {
@@ -208,4 +220,16 @@ int main()
     }
 
     return 0;
+}
+
+void performSearchOver(Graph& g, void (*visitor)(Graph&, int, int))
+{
+    int nodes = g.getNumNodes();
+    bool* explored = new bool[nodes];
+}
+
+void maxGrade(Graph& g, int studentFrom, int studentTo)
+{
+    int grade = max(g.getGrade(studentFrom), g.getGrade(studentTo));
+    g.setGrade(studentTo, grade);
 }
