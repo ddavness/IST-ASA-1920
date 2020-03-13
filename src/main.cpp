@@ -56,6 +56,7 @@ LinkedList::~LinkedList()
 
 bool LinkedList::hasNext()
 {
+    cout << data <<endl;
     return next != nullptr;
 }
 
@@ -186,8 +187,8 @@ void maxGrade(Graph&, int, int);
 // Main method
 int main()
 {
-    linkedlist_sanity_test();
-    graph_sanity_test();
+    // linkedlist_sanity_test();
+    // graph_sanity_test();
 
     // Read contents from stdin
     // How many students? What kind of relationships?
@@ -224,11 +225,12 @@ int main()
 void visit(Graph& g, int node, bool* explored, void (*visitor)(Graph&, int, int))
 {
     LinkedList* connection = g.getConnections(node);
-    while (connection->hasNext())
+    while (connection)
     {
         int child = connection->data;
         visitor(g, node, child);
         visit(g, child, explored, visitor);
+        connection = connection->next;
     }
 
     explored[node] = true;
@@ -237,7 +239,14 @@ void visit(Graph& g, int node, bool* explored, void (*visitor)(Graph&, int, int)
 void performSearchOver(Graph& g, void (*visitor)(Graph&, int, int))
 {
     int nodes = g.getNumNodes();
+
+    // Initialize tracking array
     bool* explored = new bool[nodes];
+    for (int i = 0; i < nodes; i++)
+    {
+        explored[i] = false;
+    }
+
     for (int i = 0; i < nodes; i++)
     {
         if (explored[i])
@@ -247,6 +256,8 @@ void performSearchOver(Graph& g, void (*visitor)(Graph&, int, int))
 
         visit(g, i, explored, visitor);
     }
+
+    delete[] explored;
 }
 
 void maxGrade(Graph& g, int studentFrom, int studentTo)
