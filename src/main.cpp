@@ -135,11 +135,13 @@ int main()
 
     Graph students(numStudents, numChains);
 
-    for (int i = 0; i < numStudents; i++) {
+    for (int i = 0; i < numStudents; i++)
+    {
         cin >> grade;
         students.setGrade(i, grade);
     }
-    for (int i = 0; i < numChains; i++) {
+    for (int i = 0; i < numChains; i++)
+    {
         cin >> studentFrom;
         cin >> studentTo;
         students.addConnection(studentFrom - 1, studentTo - 1);
@@ -148,7 +150,8 @@ int main()
     performSearchOver(students, maxGrade);
 
     // Dump graph contents here
-    for (int i = 0; i < numStudents; i++) {
+    for (int i = 0; i < numStudents; i++)
+    {
         cout << students.getGrade(i) << endl;
     }
 
