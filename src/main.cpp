@@ -1,4 +1,5 @@
 #include <cmath>
+#include <cstring>
 #include <iostream>
 
 using namespace std;
@@ -67,9 +68,9 @@ Graph::Graph(int nodes, int connections)
 
     for(int i = 0; i < nodes; i++)
     {
-        this->nodes[i] = 0;
         this->connections[i] = nullptr;
     }
+    memset(this->nodes, 0, sizeof(int) * numNodes);
 }
 
 Graph::~Graph()
@@ -176,10 +177,7 @@ void performSearchOver(Graph& g, void (*visitor)(Graph&, int, int))
 
     // Initialize tracking array
     bool* explored = new bool[nodes];
-    for (int i = 0; i < nodes; i++)
-    {
-        explored[i] = false;
-    }
+    memset(explored, false, sizeof(bool) * nodes);
 
     for (int i = 0; i < nodes; i++)
     {
