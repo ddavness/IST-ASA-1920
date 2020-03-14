@@ -1,4 +1,3 @@
-#include <cmath>
 #include <cstring>
 #include <iostream>
 
@@ -115,9 +114,9 @@ int Graph::getNumNodes()
     return numNodes;
 }
 
-void performSearchOver(Graph&, void (Graph&, int, int));
+void performSearchOver(Graph&, bool (Graph&, int, int));
 
-void maxGrade(Graph&, int, int);
+bool maxGrade(Graph&, int, int);
 
 // Main method
 int main()
@@ -141,8 +140,8 @@ int main()
     }
     for (int i = 0; i < numChains; i++)
     {
-        cin >> studentFrom;
         cin >> studentTo;
+        cin >> studentFrom;
         students.addConnection(studentFrom - 1, studentTo - 1);
     }
 
@@ -157,21 +156,26 @@ int main()
     return 0;
 }
 
-void visit(Graph& g, int node, bool* explored, void (*visitor)(Graph&, int, int))
+void visit(Graph& g, int node, bool* explored, bool (*visitor)(Graph&, int, int))
 {
+    if (explored[node])
+    {
+        return;
+    }
+    explored[node] = true;
+
     LinkedList* connection = g.getConnections(node);
     while (connection)
     {
         int child = connection->data;
+        cout << node << "->" << child << endl;
         visitor(g, node, child);
         visit(g, child, explored, visitor);
         connection = connection->next;
     }
-
-    explored[node] = true;
 }
 
-void performSearchOver(Graph& g, void (*visitor)(Graph&, int, int))
+void performSearchOver(Graph& g, bool (*visitor)(Graph&, int, int))
 {
     int nodes = g.getNumNodes();
 
@@ -189,11 +193,29 @@ void performSearchOver(Graph& g, void (*visitor)(Graph&, int, int))
         visit(g, i, explored, visitor);
     }
 
+    memset(explored, false, sizeof(bool) * nodes);
+
+    for (int i = nodes - 1; i >= 0; i--)
+    {
+        if (explored[i])
+        {
+            continue;
+        }
+
+        visit(g, i, explored, visitor);
+    }
+
     delete[] explored;
 }
 
-void maxGrade(Graph& g, int studentFrom, int studentTo)
+bool maxGrade(Graph& g, int studentFrom, int studentTo)
 {
-    int grade = max(g.getGrade(studentFrom), g.getGrade(studentTo));
-    g.setGrade(studentTo, grade);
+    int newGrade = g.getGrade(studentFrom);
+    if (newGrade > g.getGrade(studentTo))
+    {
+        g.setGrade(studentTo, newGrade);
+        return true;
+    }
+
+    return false;
 }
