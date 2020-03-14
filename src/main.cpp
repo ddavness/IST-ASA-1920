@@ -50,7 +50,6 @@ LinkedList::LinkedList(int data)
 
 LinkedList::~LinkedList()
 {
-    cout << "LinkedList being deleted" << endl;
     delete next;
 }
 
@@ -75,7 +74,6 @@ Graph::Graph(int nodes, int connections)
 
 Graph::~Graph()
 {
-    cout << "Graph being deleted" << endl;
     delete[] nodes;
 
     // We need to delete each LinkedList*
