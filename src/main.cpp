@@ -168,7 +168,6 @@ void visit(Graph& g, int node, bool* explored, bool (*visitor)(Graph&, int, int)
     while (connection)
     {
         int child = connection->data;
-        cout << node << "->" << child << endl;
         visitor(g, node, child);
         visit(g, child, explored, visitor);
         connection = connection->next;
