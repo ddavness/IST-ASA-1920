@@ -8,39 +8,38 @@ class LinkedList
 {
 public:
     LinkedList();
-    LinkedList(int );
+    LinkedList(int);
     ~LinkedList();
 
     bool hasNext();
 
-    static void printLinkedList(LinkedList* );
+    static void printLinkedList(LinkedList *);
 
     int data;
-    LinkedList* next = nullptr;
+    LinkedList *next = nullptr;
 };
 
 class Graph
 {
 public:
-    Graph(int , int );
+    Graph(int, int);
     ~Graph();
 
-    void setGrade(int , int );
-    void addConnection(int , int );
+    void setGrade(int, int);
+    void addConnection(int, int);
 
-    int getGrade(int );
-    LinkedList* getConnections(int );
+    int getGrade(int);
+    LinkedList *getConnections(int);
 
     int getNumNodes();
 
-    static void printGraph(Graph& );
+    static void printGraph(Graph &);
 
 private:
     int numNodes, numConnections;
-    int* nodes;
-    LinkedList** connections;
+    int *nodes;
+    LinkedList **connections;
 };
-
 
 /// Class Implementations
 LinkedList::LinkedList() {}
@@ -55,7 +54,7 @@ LinkedList::~LinkedList()
 
 bool LinkedList::hasNext()
 {
-    cout << data <<endl;
+    cout << data << endl;
     return next != nullptr;
 }
 
@@ -63,12 +62,9 @@ Graph::Graph(int nodes, int connections)
     : numNodes(nodes), numConnections(connections)
 {
     this->nodes = new int[nodes];
-    this->connections = new LinkedList*[nodes];
+    this->connections = new LinkedList *[nodes];
 
-    for(int i = 0; i < nodes; i++)
-    {
-        this->connections[i] = nullptr;
-    }
+    memset(this->connections, 0, sizeof(LinkedList *) * numNodes);
     memset(this->nodes, 0, sizeof(int) * numNodes);
 }
 
@@ -77,7 +73,7 @@ Graph::~Graph()
     delete[] nodes;
 
     // We need to delete each LinkedList*
-    for(int i = 0; i < numNodes; i++)
+    for (int i = 0; i < numNodes; i++)
     {
         delete connections[i];
     }
@@ -92,7 +88,7 @@ void Graph::setGrade(int node, int grade)
 void Graph::addConnection(int node, int to)
 {
     // Make the new LL at the start
-    LinkedList* ll = new LinkedList(to);
+    LinkedList *ll = new LinkedList(to);
     ll->next = connections[node];
 
     // Add it as root
@@ -104,7 +100,7 @@ int Graph::getGrade(int node)
     return nodes[node];
 }
 
-LinkedList* Graph::getConnections(int node)
+LinkedList *Graph::getConnections(int node)
 {
     return connections[node];
 }
@@ -114,9 +110,9 @@ int Graph::getNumNodes()
     return numNodes;
 }
 
-void performSearchOver(Graph&, bool (Graph&, int, int));
+void performSearchOver(Graph &, bool(Graph &, int, int));
 
-bool maxGrade(Graph&, int, int);
+bool maxGrade(Graph &, int, int);
 
 // Main method
 int main()
@@ -156,7 +152,7 @@ int main()
     return 0;
 }
 
-void visit(Graph& g, int node, bool* explored, bool (*visitor)(Graph&, int, int))
+void visit(Graph &g, int node, bool *explored, bool (*visitor)(Graph &, int, int))
 {
     if (explored[node])
     {
@@ -164,7 +160,7 @@ void visit(Graph& g, int node, bool* explored, bool (*visitor)(Graph&, int, int)
     }
     explored[node] = true;
 
-    LinkedList* connection = g.getConnections(node);
+    LinkedList *connection = g.getConnections(node);
     while (connection)
     {
         int child = connection->data;
@@ -174,12 +170,12 @@ void visit(Graph& g, int node, bool* explored, bool (*visitor)(Graph&, int, int)
     }
 }
 
-void performSearchOver(Graph& g, bool (*visitor)(Graph&, int, int))
+void performSearchOver(Graph &g, bool (*visitor)(Graph &, int, int))
 {
     int nodes = g.getNumNodes();
 
     // Initialize tracking array
-    bool* explored = new bool[nodes];
+    bool *explored = new bool[nodes];
     memset(explored, false, sizeof(bool) * nodes);
 
     for (int i = 0; i < nodes; i++)
@@ -207,7 +203,7 @@ void performSearchOver(Graph& g, bool (*visitor)(Graph&, int, int))
     delete[] explored;
 }
 
-bool maxGrade(Graph& g, int studentFrom, int studentTo)
+bool maxGrade(Graph &g, int studentFrom, int studentTo)
 {
     int newGrade = g.getGrade(studentFrom);
     if (newGrade > g.getGrade(studentTo))
