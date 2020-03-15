@@ -164,7 +164,11 @@ void visit(Graph &g, int node, bool *explored, bool (*visitor)(Graph &, int, int
     while (connection)
     {
         int child = connection->data;
-        visitor(g, node, child);
+        if (visitor(g, node, child))
+        {
+            // We need to take a second look here
+            explored[child] = false;
+        }
         visit(g, child, explored, visitor);
         connection = connection->next;
     }
