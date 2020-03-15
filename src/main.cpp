@@ -19,10 +19,6 @@ public:
     LinkedList(int);
     ~LinkedList();
 
-    bool hasNext();
-
-    static void printLinkedList(LinkedList *);
-
     int data;
     LinkedList *next = nullptr;
 };
@@ -41,8 +37,6 @@ public:
 
     int getNumNodes();
 
-    static void printGraph(Graph &);
-
 private:
     int numNodes, numConnections;
     int *nodes;
@@ -60,19 +54,13 @@ LinkedList::~LinkedList()
     delete next;
 }
 
-bool LinkedList::hasNext()
-{
-    cout << data << endl;
-    return next != nullptr;
-}
-
 Graph::Graph(int nodes, int connections)
     : numNodes(nodes), numConnections(connections)
 {
     this->nodes = new int[nodes];
     this->connections = new LinkedList *[nodes];
 
-    memset(this->connections, 0, sizeof(LinkedList *) * numNodes);
+    memset(this->connections, (intptr_t)nullptr, sizeof(LinkedList *) * numNodes);
     memset(this->nodes, 0, sizeof(int) * numNodes);
 }
 
