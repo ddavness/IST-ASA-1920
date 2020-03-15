@@ -1,3 +1,11 @@
+/*
+ *  IST@UL
+ *  ASA 2019/20
+ *
+ *  David Ferreira de Sousa Duque, nº 93698
+ *  Ricardo Jorge Santos Subtil, nº 93752
+*/
+
 #include <cstring>
 #include <iostream>
 
@@ -183,18 +191,6 @@ void performSearchOver(Graph &g, bool (*visitor)(Graph &, int, int))
     memset(explored, false, sizeof(bool) * nodes);
 
     for (int i = 0; i < nodes; i++)
-    {
-        if (explored[i])
-        {
-            continue;
-        }
-
-        visit(g, i, explored, visitor);
-    }
-
-    memset(explored, false, sizeof(bool) * nodes);
-
-    for (int i = nodes - 1; i >= 0; i--)
     {
         if (explored[i])
         {
