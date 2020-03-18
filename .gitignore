@@ -3,3 +3,5 @@ proj-asa
 .vscode
 vgcore.*
 testgen
+test*k
+*.out
