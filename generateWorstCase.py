@@ -1,8 +1,11 @@
 import os
+import sys
 
-print("1000000,999999")
-for i in range(1000000):
-	print(i * 2 // 100000 + 1)
+x = eval(sys.argv[1])
 
-for i in range(999999):
-	print(i+1, " ", i + 2)
+print(f"{x},{x - 1}")
+for i in range(x):
+	print(i + 1)
+
+for i in range(x - 1):
+	print(i + 1, " ", i + 2)
