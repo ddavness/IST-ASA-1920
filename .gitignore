@@ -5,3 +5,4 @@ vgcore.*
 testgen
 test*k
 *.out
+!**/tests/*.out
