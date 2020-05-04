@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 import argparse
 import random
 
@@ -31,9 +31,9 @@ M = random.randint(opts.m, opts.M)
 S = random.randint(opts.s, opts.S)
 C = random.randint(opts.c, opts.C)
 
-print M, N
-print S, C
+print(M, N)
+print(S, C)
 for _ in range(S):
-  print random.randint(1,M), random.randint(1,N)
+  print(random.randint(1,M), random.randint(1,N))
 for _ in range(C):
-  print random.randint(1,M), random.randint(1,N)
+  print(random.randint(1,M), random.randint(1,N))
