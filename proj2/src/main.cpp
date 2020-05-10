@@ -5,10 +5,10 @@
     Ricardo Jorge Santos Subtil. nº 93752
 */
 
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include <vector>
-#include <bits/stdc++.h>
 
 using namespace std;
 
@@ -17,6 +17,7 @@ class Coordinates {
         Coordinates(int, int);
         Coordinates operator+(const Coordinates&);
         Coordinates operator-();
+        int distance(const Coordinates&);
         int avenue;
         int street;
 };
@@ -25,6 +26,7 @@ class Graph {
     public:
         Graph(int, int);
         int distanceToNearestSupermarket(const Coordinates&);
+        bool operator() (const Coordinates&, const Coordinates&);
         bool canReachSupermarket(const Coordinates&);
         void addSupermarket(const Coordinates&);
 
@@ -34,10 +36,8 @@ class Graph {
 
         bool getMatrixPos(const Coordinates&);
         bool* matrix;
-        vector<Coordinates&> targets;
+        vector<Coordinates> targets;
 };
-
-bool compareDistances(const Coordinates&, const Coordinates&);
 
 int main() {
     int avenues;
@@ -50,7 +50,7 @@ int main() {
     cin >> citizens;
 
     Graph city(avenues, streets);
-    vector<const Coordinates&> homes;
+    vector<Coordinates> homes;
 
     int a, s;
     for (int i = 0; i < supermarkets; ++i) {
@@ -65,7 +65,13 @@ int main() {
         homes.push_back(Coordinates(a, s));
     }
 
-    sort(homes.begin(), homes.end(), compareDistances);
+    int reachable = 0;
+    sort(homes.begin(), homes.end(), city);
+    for (vector<Coordinates>::iterator iter = homes.begin(); iter != homes.end(); ++iter) {
+        reachable += city.canReachSupermarket(*iter) ? 1 : 0;
+    }
+
+    cout << reachable << endl;
 
     exit(EXIT_SUCCESS);
 }
@@ -80,13 +86,18 @@ Coordinates Coordinates::operator+(const Coordinates& other) {
 Coordinates Coordinates::operator-() {
     return Coordinates(-avenue, -street);
 }
+int Coordinates::distance(const Coordinates& other) {
+    return static_cast<int>(abs(avenue - other.avenue) + abs(street - other.street));
+}
 
 // City graph
 
 Graph::Graph(int avenues, int streets): numAvenues(avenues), numStreets(streets) {
-    targets = vector<Coordinates&>();
+    targets = vector<Coordinates>();
     matrix = new bool[avenues * streets];
 }
+
+// Private methods
 
 bool Graph::getMatrixPos(const Coordinates& coord) {
     if (coord.avenue > numAvenues || coord.street > numStreets) {
