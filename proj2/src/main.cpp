@@ -11,8 +11,15 @@
 
 using namespace std;
 
-int main(int argc, char** argv) {
-    cout << argc << endl;
-    cout << argv << endl;
+int main() {
+    int avenues;
+    int streets;
+    int supermarkets;
+    int citizens;
+    cin >> avenues;
+    cin >> streets;
+    cin >> supermarkets;
+    cin >> citizens;
+
     exit(EXIT_SUCCESS);
 }
