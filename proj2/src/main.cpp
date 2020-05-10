@@ -9,6 +9,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <set>
+#include <limits>
 
 using namespace std;
 
@@ -16,8 +18,9 @@ class Coordinates {
     public:
         Coordinates(int, int);
         Coordinates operator+(const Coordinates&);
-        Coordinates operator-();
-        int distance(const Coordinates&);
+        Coordinates operator-() const;
+        bool operator<(Coordinates) const;
+        int distance(const Coordinates&) const;
         int avenue;
         int street;
 };
@@ -25,8 +28,8 @@ class Coordinates {
 class Graph {
     public:
         Graph(int, int);
-        int distanceToNearestSupermarket(const Coordinates&);
-        bool operator() (const Coordinates&, const Coordinates&);
+        int distanceToNearestSupermarket(Coordinates&);
+        bool operator() (Coordinates&, Coordinates&);
         bool canReachSupermarket(const Coordinates&);
         void addSupermarket(const Coordinates&);
 
@@ -36,7 +39,7 @@ class Graph {
 
         bool getMatrixPos(const Coordinates&);
         bool* matrix;
-        vector<Coordinates> targets;
+        set<Coordinates> targets;
 };
 
 int main() {
@@ -83,18 +86,44 @@ Coordinates::Coordinates(int a, int s): avenue(a), street(s) {}
 Coordinates Coordinates::operator+(const Coordinates& other) {
     return Coordinates(avenue + other.avenue, street + other.street);
 }
-Coordinates Coordinates::operator-() {
+Coordinates Coordinates::operator-() const {
     return Coordinates(-avenue, -street);
 }
-int Coordinates::distance(const Coordinates& other) {
-    return static_cast<int>(abs(avenue - other.avenue) + abs(street - other.street));
+bool Coordinates::operator<(Coordinates other) const {
+    return avenue < other.avenue || (avenue == other.avenue && street < other.street);
+}
+int Coordinates::distance(const Coordinates& other) const {
+    return abs(avenue - other.avenue) + abs(street - other.street);
 }
 
 // City graph
 
 Graph::Graph(int avenues, int streets): numAvenues(avenues), numStreets(streets) {
-    targets = vector<Coordinates>();
+    targets = set<Coordinates>();
     matrix = new bool[avenues * streets];
+}
+
+int Graph::distanceToNearestSupermarket(Coordinates& start) {
+    double distance = numeric_limits<double>::infinity();
+
+    for (set<Coordinates>::iterator iter = targets.begin(); iter != targets.end(); ++iter) {
+        int newDist = start.distance(*iter);
+        distance = min(distance, static_cast<double>(newDist));
+    }
+
+    return static_cast<int>(distance);
+}
+
+bool Graph::operator() (Coordinates& alpha, Coordinates& beta) {
+    return distanceToNearestSupermarket(alpha) < distanceToNearestSupermarket(beta);
+}
+
+bool Graph::canReachSupermarket(const Coordinates& start) {
+    return true;
+}
+
+void Graph::addSupermarket(const Coordinates& supermarket) {
+    targets.insert(supermarket);
 }
 
 // Private methods
