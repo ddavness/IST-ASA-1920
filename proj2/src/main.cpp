@@ -138,14 +138,14 @@ void Graph::addSupermarket(const Coordinates& supermarket) {
 }
 
 Status Graph::getMatrixPos(const Coordinates& coord) const {
-    if (coord.avenue > numAvenues || coord.street > numStreets) {
+    if (coord.avenue < 1 || coord.street < 1 || coord.avenue > numAvenues || coord.street > numStreets) {
         return Status::Temp; // Nothing here, go back!
     }
     return matrix[(coord.avenue - 1) * numStreets + (coord.street - 1)];
 }
 
 void Graph::setMatrixPos(const Coordinates& coord, Status val) {
-    if (coord.avenue > numAvenues || coord.street > numStreets) {
+    if (coord.avenue < 1 || coord.street < 1 || coord.avenue > numAvenues || coord.street > numStreets) {
         throw; // Nothing here!
     }
     matrix[(coord.avenue - 1) * numStreets + (coord.street - 1)] = val;
@@ -180,6 +180,7 @@ bool visit(BFSNode& position, const Graph* graph, queue<BFSNode>& queue) {
             city.setMatrixPos(trace -> me, Status::Busy);
             trace = trace -> parent;
         }
+        return true;
     }
 
     city.setMatrixPos(position.me, Status::Temp);
