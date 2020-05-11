@@ -38,11 +38,13 @@ class Graph {
         Graph(int, int);
         int distanceToNearestSupermarket(Coordinates&) const;
         bool operator() (Coordinates&, Coordinates&) const;
-        bool canReachSupermarket(Coordinates&) const;
+        bool canReachSupermarket(const Coordinates&) const;
         void addSupermarket(const Coordinates&);
+        void addHome(const Coordinates&);
         Status getMatrixPos(const Coordinates&) const;
         void setMatrixPos(const Coordinates&, Status value);
         set<Coordinates> targets;
+        set<Coordinates> homes;
 
     private:
         int numAvenues;
@@ -62,7 +64,7 @@ int main() {
     cin >> citizens;
 
     Graph city(avenues, streets);
-    vector<Coordinates> homes;
+    //vector<Coordinates> homes;
 
     int a, s;
     for (int i = 0; i < supermarkets; ++i) {
@@ -74,12 +76,12 @@ int main() {
     for (int i = 0; i < citizens; ++i) {
         cin >> a;
         cin >> s;
-        homes.push_back(Coordinates(a, s));
+        city.addHome(Coordinates(a, s));
     }
 
     int reachable = 0;
-    sort(homes.begin(), homes.end(), city);
-    for (vector<Coordinates>::iterator iter = homes.begin(); iter != homes.end(); ++iter) {
+    //sort(city.homes.begin(), city.homes.end(), city);
+    for (set<Coordinates>::iterator iter = city.homes.begin(); iter != city.homes.end(); ++iter) {
         reachable += city.canReachSupermarket(*iter) ? 1 : 0;
     }
 
@@ -113,6 +115,7 @@ int Coordinates::distance(const Coordinates& other) const {
 
 Graph::Graph(int avenues, int streets): numAvenues(avenues), numStreets(streets) {
     targets = set<Coordinates>();
+    homes = set<Coordinates>();
     matrix = new Status[avenues * streets];
     // Initialize the matrix
     fill(matrix, &(matrix[avenues * streets]), Status::Free);
@@ -135,6 +138,10 @@ bool Graph::operator() (Coordinates& alpha, Coordinates& beta) const {
 
 void Graph::addSupermarket(const Coordinates& supermarket) {
     targets.insert(supermarket);
+}
+
+void Graph::addHome(const Coordinates& home) {
+    homes.insert(home);
 }
 
 Status Graph::getMatrixPos(const Coordinates& coord) const {
@@ -173,6 +180,8 @@ bool visit(BFSNode& position, const Graph* graph, queue<BFSNode>& queue) {
     queue.pop(); // Remove this element
     if (city.getMatrixPos(position.me) != Status::Free) {
         return false;
+    } else if (city.homes.count(position.me) && position.parent != nullptr) {
+        return false;
     } else if (city.targets.count(position.me)) {
         // We found it! Lock the paths!
         BFSNode* trace = &position;
@@ -185,15 +194,16 @@ bool visit(BFSNode& position, const Graph* graph, queue<BFSNode>& queue) {
 
     city.setMatrixPos(position.me, Status::Temp);
     for (int i = 0; i < 4; ++i) {
-        if (position.parent && position.me + DIRECTIONS[i] == position.parent -> me) {
+        if (position.parent && position.me + DIRECTIONS[i] == position.parent->me) {
             continue;
         }
-        queue.push({ move(position.me + DIRECTIONS[i]), &position });
+        if((position.me + DIRECTIONS[i]).avenue != 0 && (position.me + DIRECTIONS[i]).street != 0)
+            queue.push({ move(position.me + DIRECTIONS[i]), &position });
     }
     return false;
 }
 
-bool Graph::canReachSupermarket(Coordinates& start) const {
+bool Graph::canReachSupermarket(const Coordinates& start) const {
     queue<BFSNode> BFSQueue;
     BFSNode initial = { move(start), nullptr };
     BFSQueue.push(initial);
