@@ -15,6 +15,12 @@
 
 using namespace std;
 
+enum class Status: int8_t {
+    Busy = 0,
+    Free = 1,
+    Temp = 2,
+};
+
 class Coordinates {
     public:
         Coordinates(int, int);
@@ -34,15 +40,15 @@ class Graph {
         bool operator() (Coordinates&, Coordinates&) const;
         bool canReachSupermarket(Coordinates&) const;
         void addSupermarket(const Coordinates&);
-        bool getMatrixPos(const Coordinates&) const;
-        void setMatrixPos(const Coordinates&, bool value);
+        Status getMatrixPos(const Coordinates&) const;
+        void setMatrixPos(const Coordinates&, Status value);
         set<Coordinates> targets;
 
     private:
         int numAvenues;
         int numStreets;
 
-        bool* matrix;
+        Status* matrix;
 };
 
 int main() {
@@ -107,9 +113,9 @@ int Coordinates::distance(const Coordinates& other) const {
 
 Graph::Graph(int avenues, int streets): numAvenues(avenues), numStreets(streets) {
     targets = set<Coordinates>();
-    matrix = new bool[avenues * streets];
+    matrix = new Status[avenues * streets];
     // Initialize the matrix
-    fill(matrix, &(matrix[avenues * streets]), true);
+    fill(matrix, &(matrix[avenues * streets]), Status::Free);
 }
 
 int Graph::distanceToNearestSupermarket(Coordinates& start) const {
@@ -131,14 +137,14 @@ void Graph::addSupermarket(const Coordinates& supermarket) {
     targets.insert(supermarket);
 }
 
-bool Graph::getMatrixPos(const Coordinates& coord) const {
+Status Graph::getMatrixPos(const Coordinates& coord) const {
     if (coord.avenue > numAvenues || coord.street > numStreets) {
-        return false; // Nothing here!
+        return Status::Temp; // Nothing here, go back!
     }
     return matrix[(coord.avenue - 1) * numStreets + (coord.street - 1)];
 }
 
-void Graph::setMatrixPos(const Coordinates& coord, bool val) {
+void Graph::setMatrixPos(const Coordinates& coord, Status val) {
     if (coord.avenue > numAvenues || coord.street > numStreets) {
         throw; // Nothing here!
     }
@@ -165,17 +171,18 @@ bool visit(BFSNode& position, const Graph* graph, queue<BFSNode>& queue) {
     cout << "Visiting " << position.me.avenue << ',' << position.me.street << "\n";
     Graph city = *graph;
     queue.pop(); // Remove this element
-    if (!city.getMatrixPos(position.me)) {
+    if (city.getMatrixPos(position.me) != Status::Free) {
         return false;
     } else if (city.targets.count(position.me)) {
         // We found it! Lock the paths!
         BFSNode* trace = &position;
         while (trace) {
-            city.setMatrixPos(trace -> me, false);
+            city.setMatrixPos(trace -> me, Status::Busy);
             trace = trace -> parent;
         }
     }
 
+    city.setMatrixPos(position.me, Status::Temp);
     for (int i = 0; i < 4; ++i) {
         if (position.parent && position.me + DIRECTIONS[i] == position.parent -> me) {
             continue;
