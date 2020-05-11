@@ -21,6 +21,7 @@ class Coordinates {
         Coordinates operator+(const Coordinates&) const;
         Coordinates operator-() const;
         bool operator<(Coordinates) const;
+        bool operator==(Coordinates) const;
         int distance(const Coordinates&) const;
         int avenue;
         int street;
@@ -34,6 +35,7 @@ class Graph {
         bool canReachSupermarket(Coordinates&) const;
         void addSupermarket(const Coordinates&);
         bool getMatrixPos(const Coordinates&) const;
+        void setMatrixPos(const Coordinates&, bool value);
         set<Coordinates> targets;
 
     private:
@@ -93,6 +95,10 @@ Coordinates Coordinates::operator-() const {
 bool Coordinates::operator<(Coordinates other) const {
     return avenue < other.avenue || (avenue == other.avenue && street < other.street);
 }
+bool Coordinates::operator==(Coordinates other) const {
+    return avenue == other.avenue && street < other.street;
+}
+
 int Coordinates::distance(const Coordinates& other) const {
     return abs(avenue - other.avenue) + abs(street - other.street);
 }
@@ -121,6 +127,33 @@ bool Graph::operator() (Coordinates& alpha, Coordinates& beta) const {
     return distanceToNearestSupermarket(alpha) < distanceToNearestSupermarket(beta);
 }
 
+void Graph::addSupermarket(const Coordinates& supermarket) {
+    targets.insert(supermarket);
+}
+
+bool Graph::getMatrixPos(const Coordinates& coord) const {
+    if (coord.avenue > numAvenues || coord.street > numStreets) {
+        return false; // Nothing here!
+    }
+    return matrix[(coord.avenue - 1) * numStreets + (coord.street - 1)];
+}
+
+void Graph::setMatrixPos(const Coordinates& coord, bool val) {
+    if (coord.avenue > numAvenues || coord.street > numStreets) {
+        throw; // Nothing here!
+    }
+    matrix[(coord.avenue - 1) * numStreets + (coord.street - 1)] = val;
+}
+
+// ALGORITHM SPECIFICS
+
+typedef struct bfs BFSNode;
+
+struct bfs {
+    Coordinates me;
+    BFSNode* parent;
+};
+
 const Coordinates DIRECTIONS[4] = {
     Coordinates(1, 0),
     Coordinates(0, 1),
@@ -128,30 +161,37 @@ const Coordinates DIRECTIONS[4] = {
     Coordinates(0, -1)
 };
 
-bool visit(const Coordinates& position, const Graph* graph, queue<Coordinates>& queue) {
-    // cout << "Visiting " << position.avenue << ',' << position.street << "\n";
+bool visit(BFSNode& position, const Graph* graph, queue<BFSNode>& queue) {
+    cout << "Visiting " << position.me.avenue << ',' << position.me.street << "\n";
     Graph city = *graph;
     queue.pop(); // Remove this element
-    if (!city.getMatrixPos(position)) {
+    if (!city.getMatrixPos(position.me)) {
         return false;
-    } else if (city.targets.count(position)) {
-        return true;
+    } else if (city.targets.count(position.me)) {
+        // We found it! Lock the paths!
+        BFSNode* trace = &position;
+        while (trace) {
+            city.setMatrixPos(trace -> me, false);
+            trace = trace -> parent;
+        }
     }
 
     for (int i = 0; i < 4; ++i) {
-        Coordinates x = position + DIRECTIONS[i];
-        // cout << "Pushing " << x.avenue << ',' << x.street << "\n";
-        queue.push(x);
+        if (position.parent && position.me + DIRECTIONS[i] == position.parent -> me) {
+            continue;
+        }
+        queue.push({ move(position.me + DIRECTIONS[i]), &position });
     }
     return false;
 }
 
 bool Graph::canReachSupermarket(Coordinates& start) const {
-    queue<Coordinates> BFSQueue;
-    BFSQueue.push(start);
+    queue<BFSNode> BFSQueue;
+    BFSNode initial = { move(start), nullptr };
+    BFSQueue.push(initial);
 
     while (!BFSQueue.empty()) {
-        // cout << "Queue Size: " << BFSQueue.size() << endl;
+        cout << "Queue Size: " << BFSQueue.size() << endl;
         bool match = visit(BFSQueue.front(), this, BFSQueue);
         if (match) {
             return true;
@@ -159,15 +199,4 @@ bool Graph::canReachSupermarket(Coordinates& start) const {
     }
 
     return false;
-}
-
-void Graph::addSupermarket(const Coordinates& supermarket) {
-    targets.insert(supermarket);
-}
-
-bool Graph::getMatrixPos(const Coordinates& coord) const {
-    if (coord.avenue > numAvenues || coord.street > numStreets) {
-        throw "Invalid position!";
-    }
-    return matrix[(coord.avenue - 1) * numStreets + (coord.street - 1)];
 }
