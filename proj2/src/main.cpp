@@ -33,18 +33,37 @@ class Coordinates {
         int street;
 };
 
+class Supermarket {
+    public:
+        Coordinates pos;
+        int num;
+
+        bool operator<(Coordinates) const;
+        bool operator<(Supermarket) const;
+};
+
+class Home {
+    public:
+        Coordinates pos;
+        int num;
+        Supermarket* supermarket;
+
+        bool operator<(Coordinates) const;
+        bool operator<(Home) const;
+};
+
 class Graph {
     public:
         Graph(int, int);
         int distanceToNearestSupermarket(Coordinates&) const;
         bool operator() (Coordinates&, Coordinates&) const;
-        bool canReachSupermarket(const Coordinates&) const;
-        void addSupermarket(const Coordinates&);
-        void addHome(const Coordinates&);
+        bool canReachSupermarket(const Home&) const;
+        void addSupermarket(const Supermarket&);
+        void addHome(const Home&);
         Status getMatrixPos(const Coordinates&) const;
         void setMatrixPos(const Coordinates&, Status value);
-        set<Coordinates> targets;
-        set<Coordinates> homes;
+        set<Supermarket> supermarkets;
+        set<Home> homes;
 
         int numAvenues;
         int numStreets;
@@ -70,20 +89,27 @@ int main() {
     for (int i = 0; i < supermarkets; ++i) {
         cin >> a;
         cin >> s;
-        city.addSupermarket(Coordinates(a, s));
+
+        Supermarket sm = {Coordinates(a, s), i + 1};
+        city.addSupermarket(sm);
     }
 
     for (int i = 0; i < citizens; ++i) {
         cin >> a;
         cin >> s;
-        city.addHome(Coordinates(a, s));
+        Home hm = {Coordinates(a, s), i + 1, nullptr};
+        city.addHome(hm);
     }
 
     int reachable = 0;
     //sort(city.homes.begin(), city.homes.end(), city);
-    for (set<Coordinates>::iterator iter = city.homes.begin(); iter != city.homes.end(); ++iter) {
+    // Compute quick solution
+    for (set<Home>::iterator iter = city.homes.begin(); iter != city.homes.end(); ++iter) {
         reachable += city.canReachSupermarket(*iter) ? 1 : 0;
     }
+
+    // For each unconnected home, try maximizing the solution
+    queue<Coordinates> homesDisconnected;
 
     cout << reachable << endl;
 
@@ -111,11 +137,28 @@ int Coordinates::distance(const Coordinates& other) const {
     return abs(avenue - other.avenue) + abs(street - other.street);
 }
 
+// Homes and Supermarkets
+bool Home::operator<(Coordinates other) const {
+    return pos < other;
+}
+
+bool Supermarket::operator<(Coordinates other) const {
+    return pos < other;
+}
+
+bool Home::operator<(Home other) const {
+    return pos < other.pos;
+}
+
+bool Supermarket::operator<(Supermarket other) const {
+    return pos < other.pos;
+}
+
 // City graph
 
 Graph::Graph(int avenues, int streets): numAvenues(avenues), numStreets(streets) {
-    targets = set<Coordinates>();
-    homes = set<Coordinates>();
+    supermarkets = set<Supermarket>();
+    homes = set<Home>();
     matrix = new Status[avenues * streets];
     // Initialize the matrix
     fill(matrix, &(matrix[avenues * streets]), Status::Free);
@@ -124,8 +167,8 @@ Graph::Graph(int avenues, int streets): numAvenues(avenues), numStreets(streets)
 int Graph::distanceToNearestSupermarket(Coordinates& start) const {
     double distance = numeric_limits<double>::infinity();
 
-    for (set<Coordinates>::iterator iter = targets.begin(); iter != targets.end(); ++iter) {
-        int newDist = start.distance(*iter);
+    for (set<Supermarket>::iterator iter = supermarkets.begin(); iter != supermarkets.end(); ++iter) {
+        int newDist = start.distance((*iter).pos);
         distance = min(distance, static_cast<double>(newDist));
     }
 
@@ -136,11 +179,11 @@ bool Graph::operator() (Coordinates& alpha, Coordinates& beta) const {
     return distanceToNearestSupermarket(alpha) < distanceToNearestSupermarket(beta);
 }
 
-void Graph::addSupermarket(const Coordinates& supermarket) {
-    targets.insert(supermarket);
+void Graph::addSupermarket(const Supermarket& supermarket) {
+    supermarkets.insert(supermarket);
 }
 
-void Graph::addHome(const Coordinates& home) {
+void Graph::addHome(const Home& home) {
     homes.insert(home);
 }
 
@@ -181,9 +224,9 @@ bool visit(BFSNode& position, const Graph* graph, queue<BFSNode>& queue, vector<
     visitedVertices[position.me.avenue * graph->numAvenues + position.me.street] = 1; // Mark vertex as visited
     if (city.getMatrixPos(position.me) != Status::Free) {
         return false;
-    } else if (city.homes.count(position.me) && position.parent != nullptr) {
+    } else if (city.homes.count({position.me, -1, nullptr}) && position.parent != nullptr) {
         return false;
-    } else if (city.targets.count(position.me)) {
+    } else if (city.supermarkets.count({position.me, -1})) {
         // We found it! Lock the paths!
         BFSNode* trace = &position;
         while (trace) {
@@ -214,25 +257,25 @@ void printQueue(queue<BFSNode> q) {
     cout << endl;
 }
 
-bool Graph::canReachSupermarket(const Coordinates& start) const {
+bool Graph::canReachSupermarket(const Home& start) const {
     queue<BFSNode> BFSQueue;
-    BFSNode initial = { move(start), nullptr };
+    BFSNode initial = { move(start.pos), nullptr };
     BFSQueue.push(initial);
 
     vector<int> visitedVertices(numAvenues * numStreets);
     fill(visitedVertices.begin(), visitedVertices.end(), 0);
 
-    cout << "Performing BFS for home (" << start.avenue << ", " << start.street << ")" << endl;
+    cout << "Performing BFS for home (" << start.pos.avenue << ", " << start.pos.street << ")" << endl;
     while (!BFSQueue.empty()) {
         cout << "Queue Size: " << BFSQueue.size() << " -> ";
         printQueue(BFSQueue);
         bool match = visit(BFSQueue.front(), this, BFSQueue, visitedVertices);
         if (match) {
-            cout << "Home (" << start.avenue << "," << start.street << ") got matched with a supermarket!" << endl;
+            cout << "Home (" << start.pos.avenue << "," << start.pos.street << ") got matched with a supermarket!" << endl;
             return true;
         }
     }
 
-    cout << "Home (" << start.avenue << "," << start.street << ") didn't get matched!" << endl;
+    cout << "Home (" << start.pos.avenue << "," << start.pos.street << ") didn't get matched!" << endl;
     return false;
 }
