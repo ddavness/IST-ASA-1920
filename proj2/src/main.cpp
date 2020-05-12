@@ -46,10 +46,10 @@ class Graph {
         set<Coordinates> targets;
         set<Coordinates> homes;
 
-    private:
         int numAvenues;
         int numStreets;
 
+    private:
         Status* matrix;
 };
 
@@ -174,10 +174,11 @@ const Coordinates DIRECTIONS[4] = {
     Coordinates(0, -1)
 };
 
-bool visit(BFSNode& position, const Graph* graph, queue<BFSNode>& queue) {
+bool visit(BFSNode& position, const Graph* graph, queue<BFSNode>& queue, vector<int>& visitedVertices) {
     cout << "Visiting " << position.me.avenue << ',' << position.me.street << "\n";
     Graph city = *graph;
     queue.pop(); // Remove this element
+    visitedVertices[position.me.avenue * graph->numAvenues + position.me.street] = 1; // Mark vertex as visited
     if (city.getMatrixPos(position.me) != Status::Free) {
         return false;
     } else if (city.homes.count(position.me) && position.parent != nullptr) {
@@ -192,15 +193,25 @@ bool visit(BFSNode& position, const Graph* graph, queue<BFSNode>& queue) {
         return true;
     }
 
-    city.setMatrixPos(position.me, Status::Temp);
+    //city.setMatrixPos(position.me, Status::Temp);
     for (int i = 0; i < 4; ++i) {
-        if (position.parent && position.me + DIRECTIONS[i] == position.parent->me) {
-            continue;
+        Coordinates neighbor = position.me + DIRECTIONS[i];
+        if(neighbor.avenue != 0 && neighbor.street != 0
+        && neighbor.avenue <= graph->numAvenues && neighbor.street <= graph->numStreets     // Check if coordinates are in-bounds
+        && visitedVertices[neighbor.avenue * graph->numAvenues + neighbor.street] == 0) { // Check if vertex is unvisited
+            //cout << "Neighbor is (" << neighbor.avenue << ", " << neighbor.street << "). Visited is " << visitedVertices[neighbor.avenue * graph->numAvenues + neighbor.street] << endl;
+            queue.push({ neighbor, &position });
         }
-        if((position.me + DIRECTIONS[i]).avenue != 0 && (position.me + DIRECTIONS[i]).street != 0)
-            queue.push({ move(position.me + DIRECTIONS[i]), &position });
     }
     return false;
+}
+
+void printQueue(queue<BFSNode> q) {
+    while(!q.empty()) {
+        cout << "(" << q.front().me.avenue << ", " << q.front().me.street << ") ";
+        q.pop();
+    }
+    cout << endl;
 }
 
 bool Graph::canReachSupermarket(const Coordinates& start) const {
@@ -208,13 +219,20 @@ bool Graph::canReachSupermarket(const Coordinates& start) const {
     BFSNode initial = { move(start), nullptr };
     BFSQueue.push(initial);
 
+    vector<int> visitedVertices(numAvenues * numStreets);
+    fill(visitedVertices.begin(), visitedVertices.end(), 0);
+
+    cout << "Performing BFS for home (" << start.avenue << ", " << start.street << ")" << endl;
     while (!BFSQueue.empty()) {
-        cout << "Queue Size: " << BFSQueue.size() << endl;
-        bool match = visit(BFSQueue.front(), this, BFSQueue);
+        cout << "Queue Size: " << BFSQueue.size() << " -> ";
+        printQueue(BFSQueue);
+        bool match = visit(BFSQueue.front(), this, BFSQueue, visitedVertices);
         if (match) {
+            cout << "Home (" << start.avenue << "," << start.street << ") got matched with a supermarket!" << endl;
             return true;
         }
     }
 
+    cout << "Home (" << start.avenue << "," << start.street << ") didn't get matched!" << endl;
     return false;
 }
