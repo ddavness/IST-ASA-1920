@@ -15,10 +15,9 @@
 
 using namespace std;
 
-enum class Status: int8_t {
-    Busy = 0,
-    Free = 1,
-    Temp = 2,
+enum class Status: int {
+    Locked = -1,
+    Free = 0
 };
 
 class Coordinates {
@@ -40,6 +39,7 @@ class Supermarket {
 
         bool operator<(Coordinates) const;
         bool operator<(Supermarket) const;
+        bool operator==(Supermarket) const;
 };
 
 class Home {
@@ -50,6 +50,7 @@ class Home {
 
         bool operator<(Coordinates) const;
         bool operator<(Home) const;
+        bool operator==(Home) const;
 };
 
 class Graph {
@@ -89,7 +90,6 @@ int main() {
     for (int i = 0; i < supermarkets; ++i) {
         cin >> a;
         cin >> s;
-
         Supermarket sm = {Coordinates(a, s), i + 1};
         city.addSupermarket(sm);
     }
@@ -109,7 +109,14 @@ int main() {
     }
 
     // For each unconnected home, try maximizing the solution
-    queue<Coordinates> homesDisconnected;
+    queue<Home> homesDisconnected;
+    for(set<Home>::iterator iter = city.homes.begin(); iter != city.homes.end(); ++iter) {
+        if((*iter).supermarket == nullptr) {
+            homesDisconnected.push(*iter);
+        }
+    }
+
+    cout << "Size of queue of disconnected houses: " << homesDisconnected.size() << endl;
 
     cout << reachable << endl;
 
@@ -138,6 +145,14 @@ int Coordinates::distance(const Coordinates& other) const {
 }
 
 // Homes and Supermarkets
+bool Home::operator==(Home other) const {
+    return pos == other.pos;
+}
+
+bool Supermarket::operator==(Supermarket other) const {
+    return pos == other.pos;
+}
+
 bool Home::operator<(Coordinates other) const {
     return pos < other;
 }
@@ -188,9 +203,9 @@ void Graph::addHome(const Home& home) {
 }
 
 Status Graph::getMatrixPos(const Coordinates& coord) const {
-    if (coord.avenue < 1 || coord.street < 1 || coord.avenue > numAvenues || coord.street > numStreets) {
+    /*if (coord.avenue < 1 || coord.street < 1 || coord.avenue > numAvenues || coord.street > numStreets) {
         return Status::Temp; // Nothing here, go back!
-    }
+    }*/
     return matrix[(coord.avenue - 1) * numStreets + (coord.street - 1)];
 }
 
@@ -217,7 +232,7 @@ const Coordinates DIRECTIONS[4] = {
     Coordinates(0, -1)
 };
 
-bool visit(BFSNode& position, const Graph* graph, queue<BFSNode>& queue, vector<int>& visitedVertices) {
+bool visit(BFSNode& position, const int num, Graph* graph, queue<BFSNode>& queue, vector<int>& visitedVertices) {
     cout << "Visiting " << position.me.avenue << ',' << position.me.street << "\n";
     Graph city = *graph;
     queue.pop(); // Remove this element
@@ -229,8 +244,16 @@ bool visit(BFSNode& position, const Graph* graph, queue<BFSNode>& queue, vector<
     } else if (city.supermarkets.count({position.me, -1})) {
         // We found it! Lock the paths!
         BFSNode* trace = &position;
+        Supermarket s = *(city.supermarkets.find({trace->me,-1}));
         while (trace) {
-            city.setMatrixPos(trace -> me, Status::Busy);
+            city.setMatrixPos(trace -> me, (Status)(num));
+            if(trace->parent == nullptr) {
+                // Trace is the root, aka the original home
+                Home h = *((*graph).homes.find({trace->me, num, nullptr}));
+                h.supermarket = &s;
+                (*graph).homes.erase((*graph).homes.find({trace->me, num, nullptr}));
+                (*graph).homes.insert(h);
+            }
             trace = trace -> parent;
         }
         return true;
@@ -269,7 +292,7 @@ bool Graph::canReachSupermarket(const Home& start) const {
     while (!BFSQueue.empty()) {
         cout << "Queue Size: " << BFSQueue.size() << " -> ";
         printQueue(BFSQueue);
-        bool match = visit(BFSQueue.front(), this, BFSQueue, visitedVertices);
+        bool match = visit(BFSQueue.front(), start.num, const_cast<Graph*>(this), BFSQueue, visitedVertices);
         if (match) {
             cout << "Home (" << start.pos.avenue << "," << start.pos.street << ") got matched with a supermarket!" << endl;
             return true;
