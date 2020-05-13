@@ -9,9 +9,10 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <set>
 #include <queue>
 #include <limits>
+#include <unordered_set>
+#include <functional>
 
 using namespace std;
 
@@ -26,12 +27,23 @@ class Coordinates {
         Coordinates(int, int);
         Coordinates operator+(const Coordinates&) const;
         Coordinates operator-() const;
+        Coordinates operator() () const;
         bool operator<(Coordinates) const;
         bool operator==(Coordinates) const;
         int distance(const Coordinates&) const;
         int avenue;
         int street;
 };
+
+// Define hash for coordinates
+namespace std {
+    template<>
+        struct hash<Coordinates> {
+            size_t operator()(const Coordinates& obj) const {
+                return hash<string>()(to_string(obj.avenue) + ',' + to_string(obj.street));
+            }
+        };
+}
 
 class Graph {
     public:
@@ -43,8 +55,8 @@ class Graph {
         void addHome(const Coordinates&);
         Status getMatrixPos(const Coordinates&) const;
         void setMatrixPos(const Coordinates&, Status value);
-        set<Coordinates> targets;
-        set<Coordinates> homes;
+        unordered_set<Coordinates> targets;
+        unordered_set<Coordinates> homes;
 
         int numAvenues;
         int numStreets;
@@ -81,7 +93,7 @@ int main() {
 
     int reachable = 0;
     //sort(city.homes.begin(), city.homes.end(), city);
-    for (set<Coordinates>::iterator iter = city.homes.begin(); iter != city.homes.end(); ++iter) {
+    for (unordered_set<Coordinates>::iterator iter = city.homes.begin(); iter != city.homes.end(); ++iter) {
         reachable += city.canReachSupermarket(*iter) ? 1 : 0;
     }
 
@@ -114,8 +126,8 @@ int Coordinates::distance(const Coordinates& other) const {
 // City graph
 
 Graph::Graph(int avenues, int streets): numAvenues(avenues), numStreets(streets) {
-    targets = set<Coordinates>();
-    homes = set<Coordinates>();
+    targets = unordered_set<Coordinates>();
+    homes = unordered_set<Coordinates>();
     matrix = new Status[avenues * streets];
     // Initialize the matrix
     fill(matrix, &(matrix[avenues * streets]), Status::Free);
@@ -124,7 +136,7 @@ Graph::Graph(int avenues, int streets): numAvenues(avenues), numStreets(streets)
 int Graph::distanceToNearestSupermarket(Coordinates& start) const {
     double distance = numeric_limits<double>::infinity();
 
-    for (set<Coordinates>::iterator iter = targets.begin(); iter != targets.end(); ++iter) {
+    for (unordered_set<Coordinates>::iterator iter = targets.cbegin; iter != targets.cend(); ++iter) {
         int newDist = start.distance(*iter);
         distance = min(distance, static_cast<double>(newDist));
     }
