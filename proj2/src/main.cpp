@@ -24,10 +24,12 @@ enum class Status: int8_t {
 
 class Coordinates {
     public:
+        Coordinates() = default;
         Coordinates(int, int);
         Coordinates operator+(const Coordinates&) const;
         Coordinates operator-() const;
         Coordinates operator() () const;
+        Coordinates toCanonicalForm() const;
         bool operator<(Coordinates) const;
         bool operator==(Coordinates) const;
         int distance(const Coordinates&) const;
@@ -78,7 +80,6 @@ int main() {
     cin >> citizens;
 
     Graph city(avenues, streets);
-    //vector<Coordinates> homes;
 
     int a, s;
     for (int i = 0; i < supermarkets; ++i) {
@@ -117,6 +118,10 @@ bool Coordinates::operator==(Coordinates other) const {
 
 int Coordinates::distance(const Coordinates& other) const {
     return abs(avenue - other.avenue) + abs(street - other.street);
+}
+
+Coordinates Coordinates::toCanonicalForm() const {
+    return Coordinates(avenue - 1, street - 1);
 }
 
 // City graph
@@ -168,13 +173,28 @@ void Graph::setMatrixPos(const Coordinates& coord, Status val) {
 
 // ALGORITHM SPECIFICS
 
-struct BFSNode {
-    Coordinates me;
-    BFSNode* parent;
-    int house;
-    int16_t distance;
-    int8_t children;
+class BFSNode {
+    public:
+        BFSNode() = delete;
+        BFSNode(Coordinates coords, int node_house, BFSNode* parent_node);
+        Coordinates position;
+        BFSNode* parent;
+        int house;
+        int16_t distance;
+        int8_t children;
 };
+
+BFSNode::BFSNode(Coordinates coords, int node_house, BFSNode* parent_node) {
+    position = coords;
+    parent = parent_node;
+    house = node_house;
+    children = 0;
+    if (parent_node) {
+        distance = parent_node -> distance + 1;
+    } else {
+        distance = 0;
+    }
+}
 
 const Coordinates DIRECTIONS[4] = {
     Coordinates(1, 0),
@@ -183,80 +203,68 @@ const Coordinates DIRECTIONS[4] = {
     Coordinates(0, -1)
 };
 
-bool visit(BFSNode& position, const Graph* graph, queue<BFSNode>& queue, vector<int>& visitedVertices, vector<BFSNode>& heap) {
-    cout << "Visiting " << position.me.avenue << ',' << position.me.street << "\n";
+bool visit(BFSNode* node, const Graph* graph, queue<BFSNode*>& queue, vector<int>& visitedVertices, vector<BFSNode*>& heap) {
+    cout << "Visiting " << node -> position.avenue << ',' << node -> position.street << "\n";
     Graph city = *graph;
 
-    // Remove from the queue, but keep in the heap so that it's not free'd
-    heap.push_back(position);
+    // Remove from the queue, but keep in the heap so that we can clean them in the end
+    heap.push_back(node);
     queue.pop();
 
-    visitedVertices[position.me.avenue * graph->numAvenues + position.me.street] = position.house; // Mark vertex as visited
-    if (city.getMatrixPos(position.me) != Status::Free) {
+    Coordinates c = node -> position.toCanonicalForm();
+    visitedVertices[c.avenue * graph->numAvenues + c.street] = node -> house; // Mark vertex as visited
+
+    if (city.getMatrixPos(node -> position) != Status::Free) {
         return false;
-    } else if (city.homes.count(position.me) && position.parent != nullptr) {
+    } else if (city.homes.count(node -> position) && node -> parent == nullptr) {
         return false;
-    } else if (city.targets.count(position.me)) {
+    } else if (city.targets.count(node -> position)) {
         // We found it! Lock the paths!
-        BFSNode* trace = &position;
+        BFSNode* trace = node;
         while (trace) {
-            city.setMatrixPos(trace -> me, Status::Busy);
+            city.setMatrixPos(trace -> position, Status::Busy);
             trace = trace -> parent;
         }
         return true;
     }
 
-    //city.setMatrixPos(position.me, Status::Temp);
     int8_t children = 0;
 
     for (int i = 0; i < 4; ++i) {
-        Coordinates neighbor = position.me + DIRECTIONS[i];
+        Coordinates neighbor = node -> position + DIRECTIONS[i];
         if(neighbor.avenue != 0 && neighbor.street != 0
         && neighbor.avenue <= graph->numAvenues && neighbor.street <= graph->numStreets     // Check if coordinates are in-bounds
         && visitedVertices[neighbor.avenue * graph->numAvenues + neighbor.street] == 0) {   // Check if vertex is unvisited
-            //cout << "Neighbor is (" << neighbor.avenue << ", " << neighbor.street << "). Visited is " << visitedVertices[neighbor.avenue * graph->numAvenues + neighbor.street] << endl;
             ++children;
-            queue.push({
-                neighbor,
-                &position,
-                position.house,
-                static_cast<int16_t>(position.distance + 1),
-                0
-            });
+            queue.push(new BFSNode(neighbor, node -> house, node));
         }
     }
 
-    position.children = children;
+    node -> children = children;
     return false;
 }
 
-void printQueue(queue<BFSNode> q) {
+void printQueue(queue<BFSNode*> q) {
     while(!q.empty()) {
-        cout << "(" << q.front().me.avenue << ", " << q.front().me.street << ") ";
+        cout << "(" << q.front() -> position.avenue << ", " << q.front() -> position.street << ") ";
         q.pop();
     }
     cout << endl;
 }
 
 int Graph::getMaxSafeFlow() {
-    queue<BFSNode> BFSQueue;
+    queue<BFSNode*> BFSQueue;
 
     // Iterate through all homes (more or less arbitrarily)
     int c = 1;
     for (unordered_set<Coordinates>::const_iterator it = homes.begin(); it != homes.end(); ++it) {
-        BFSNode initial = { 
-            move(*it),
-            nullptr,
-            c,
-            0,
-            0
-        };
+        BFSNode* initial = new BFSNode(*it, c, nullptr);
         BFSQueue.push(initial);
         ++c;
     }
 
     vector<int> visitedVertices(numAvenues * numStreets);
-    vector<BFSNode> heap = {};
+    vector<BFSNode*> heap = {};
 
     fill(visitedVertices.begin(), visitedVertices.end(), 0);
 
