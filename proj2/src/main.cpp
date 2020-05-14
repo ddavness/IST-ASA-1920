@@ -284,16 +284,15 @@ void Graph::setMatrixPos(const Coordinates& coord, LinkedList* edges) {
     Coordinates(0, -1)
 };*/
 
-bool visit(BFSQueue* queue, const Graph* graph, vector<bool>& visited) {
+bool visit(BFSQueue* queue, Graph* graph, vector<bool>& visited) {
     BFSNode* position = &queue->data;
-    Graph city = *graph;
     cout << "Visiting " << position->vertex << "\n";
 
     // Check if it's either the super source or super target
-    if(position->vertex == city.getSourceNodePos()) {
+    if(position->vertex == graph->getSourceNodePos()) {
         // Super source - BFS is beginning
-        unordered_set<int> homes = city.homes;
-        LinkedList* ll = city.getSourceNode();
+        unordered_set<int> homes = graph->homes;
+        LinkedList* ll = graph->getSourceNode();
         while(ll != nullptr) {
             homes.erase(ll->data);
             ll = ll->next;
@@ -310,34 +309,40 @@ bool visit(BFSQueue* queue, const Graph* graph, vector<bool>& visited) {
             queue->next = queueNext;
             return false;
         }
-    } else if(position->vertex == city.getTargetNodePos()) {
+    } else if(position->vertex == graph->getTargetNodePos()) {
         // Super target - BFS is over
         cout << "Super target" << endl;
         BFSNode* trace = position;
+        cout << "Trace: ";
         do {
             int child = trace->vertex;
+            cout << child << " ";
             trace = trace->parent;
             if(trace != nullptr) {
                 LinkedList* ll = new LinkedList(child);
-                ll->next = city.nodes[trace->vertex];
-                city.nodes[trace->vertex] = ll;
+                ll->next = graph->nodes[trace->vertex];
+                graph->nodes[trace->vertex] = ll;
             }
-        } while(trace != nullptr);
+        } while(trace->parent != nullptr);
+        cout << trace->vertex << endl;
 
         return true;
     }
 
     // Check if it's a special case
     // Does the vertex already have a connection?
-    if (city.nodes[position->vertex] != nullptr) {
+    if (graph->nodes[position->vertex] != nullptr) {
+        return false;
+    // Is the vertex a home?
+    } else if(graph->homes.count(position->vertex) && position->parent->parent != nullptr) {
         return false;
     // Is this vertex already visited?
     } else if (visited[position->vertex]) {
         return false;
     // Is this vertex a supermarket?
-    } else if (city.targets.count(position->vertex)) {
+    } else if (graph->targets.count(position->vertex)) {
         // We need to connect to super target
-        int node = city.getTargetNodePos();
+        int node = graph->getTargetNodePos();
         while(queue->next != nullptr) queue = queue->next;
         BFSQueue* queueNext = new BFSQueue(BFSNode{node, position});
         queue->next = queueNext;
@@ -359,19 +364,19 @@ bool visit(BFSQueue* queue, const Graph* graph, vector<bool>& visited) {
         int realVertexPos = (position->vertex - 1) / 2;
         // Calculate the directions
         // Direction up
-        if(realVertexPos / city.numStreets > 0) {
-            directions.push_back(realVertexPos - city.numStreets);
+        if(realVertexPos / graph->numStreets > 0) {
+            directions.push_back(realVertexPos - graph->numStreets);
         }
         // Direction down
-        if(realVertexPos / city.numStreets < city.numAvenues - 1) {
-            directions.push_back(realVertexPos + city.numStreets);
+        if(realVertexPos / graph->numStreets < graph->numAvenues - 1) {
+            directions.push_back(realVertexPos + graph->numStreets);
         }
         // Direction left
-        if(realVertexPos % city.numStreets > 0) {
+        if(realVertexPos % graph->numStreets > 0) {
             directions.push_back(realVertexPos - 1);
         }
         // Direction right
-        if(realVertexPos % city.numStreets < city.numStreets - 1) {
+        if(realVertexPos % graph->numStreets < graph->numStreets - 1) {
             directions.push_back(realVertexPos + 1);
         }
         for (vector<int>::iterator iter = directions.begin(); iter != directions.end(); ++iter) {
@@ -418,6 +423,7 @@ int Graph::getMaxSafeFlow() {
         while(queue != nullptr) {
             if(visit(queue, this, visited)) {
                 match_count++;
+                break;
             }
             // If, after a single BFS visit, it has no children, it means no augmenting paths exist
             if(head->next == nullptr) {
