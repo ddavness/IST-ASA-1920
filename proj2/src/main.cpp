@@ -133,7 +133,7 @@ bool Coordinates::operator<(Coordinates other) const {
     return avenue < other.avenue || (avenue == other.avenue && street < other.street);
 }
 bool Coordinates::operator==(Coordinates other) const {
-    return avenue == other.avenue && street < other.street;
+    return avenue == other.avenue && street == other.street;
 }
 
 int Coordinates::distance(const Coordinates& other) const {
