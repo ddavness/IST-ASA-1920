@@ -76,7 +76,7 @@ class Graph {
 
     private:
         bool visit(BFSNode*, queue<BFSNode*>&, vector<BFSNode*>&);
-        Status* matrix;
+        vector<Status> matrix;
 
         unordered_set<Coordinates> targets;
         unordered_set<Coordinates> homes;
@@ -112,7 +112,7 @@ int main() {
 
     cout << city.getMaxSafeFlow() << endl;
 
-    exit(EXIT_SUCCESS);
+    return EXIT_SUCCESS;
 }
 
 // Coordinates
@@ -145,9 +145,9 @@ int Coordinates::distance(const Coordinates& other) const {
 Graph::Graph(int avenues, int streets): numAvenues(avenues), numStreets(streets) {
     targets = unordered_set<Coordinates>();
     homes = unordered_set<Coordinates>();
-    matrix = new Status[avenues * streets];
+    matrix = vector<Status>(numAvenues * numStreets);
     // Initialize the matrix
-    fill(matrix, &(matrix[avenues * streets]), Status::Free);
+    fill(matrix.begin(), matrix.end(), Status::Free);
 }
 
 int Graph::distanceToNearestSupermarket(Coordinates& start) const {
@@ -278,7 +278,6 @@ int Graph::getMaxSafeFlow() {
     }
 
     vector<BFSNode*> heap = {};
-
     int match_count = 0;
 
     while (!BFSQueue.empty()) {
@@ -289,6 +288,12 @@ int Graph::getMaxSafeFlow() {
             ++match_count;
         }
     }
+
+    for (vector<BFSNode*>::iterator it = heap.begin(); it != heap.end(); ++it) {
+        delete(*it);
+    }
+
+    heap.clear();
 
     return match_count;
 }
