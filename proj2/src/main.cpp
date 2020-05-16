@@ -128,7 +128,7 @@ int main() {
 
     cout << city.getMaxSafeFlow() << endl;
 
-    exit(EXIT_SUCCESS);
+    return EXIT_SUCCESS;
 }
 
 // Coordinates
