@@ -43,7 +43,7 @@ class BFSQueue
 public:
     BFSQueue();
     BFSQueue(BFSNode);
-    ~BFSQueue();
+    //~BFSQueue();
 
     BFSNode data;
     BFSQueue *next = nullptr;
@@ -149,10 +149,10 @@ BFSQueue::BFSQueue()
 BFSQueue::BFSQueue(BFSNode data)
     : data(data) {}
 
-BFSQueue::~BFSQueue()
+/*BFSQueue::~BFSQueue()
 {
     if(next) delete next;
-}
+}*/
 
 /*Coordinates::Coordinates(int a, int s): avenue(a), street(s) {}
 
@@ -338,19 +338,20 @@ bool visit(BFSQueue* queue, Graph* graph, vector<bool>& visited) {
     // Check if it's either the super source or super target
     if(position->vertex == graph->getSourceNodePos()) {
         // Super source - BFS is beginning
-        unordered_set<int> homes = graph->homes;
+        /*unordered_set<int> homes = graph->homes;
         LinkedList* ll = graph->getSourceNode();
         while(ll != nullptr) {
-            homes.erase(ll->data);
+            graph->homes.erase(ll->data);
             ll = ll->next;
-        }
+        }*/
 
-        if(homes.empty()) {
+        if(graph->homes.empty()) {
             // There are no more augmenting paths, algorithm is over!
             return false;
         } else {
             // Augmenting path; Add it
-            int node = (*(homes.begin()));
+            int node = (*(graph->homes.begin()));
+            graph->homes.erase(node);
             while(queue->next != nullptr) queue = queue->next;
             BFSQueue* queueNext = new BFSQueue(BFSNode{node, position});
             queue->next = queueNext;
@@ -368,42 +369,34 @@ bool visit(BFSQueue* queue, Graph* graph, vector<bool>& visited) {
             trace = trace->parent;
             // If child is connected to parent, it's a residual path; delete it
             if(graph->nodes[child] != nullptr && graph->nodes[child]->data == trace->vertex) {
-                // If 
-                if(trace->vertex == graph->getSourceNodePos()) {
-                    cout << "This shouldn't happen" << endl;
-                } else {
-                    delete graph->nodes[child];
-                    graph->nodes[child] = nullptr;
-                }
+                delete graph->nodes[child];
+                graph->nodes[child] = nullptr;
             // Else we connect the child to the parent
             } else {
                 LinkedList* ll = new LinkedList(child);
                 if(trace->vertex == graph->getSourceNodePos())
                     ll->next = graph->nodes[trace->vertex];
+                else
+                    delete graph->nodes[trace->vertex];
                 graph->nodes[trace->vertex] = ll;
             }
         } while(trace->parent != nullptr);
         //cout << trace->vertex << endl;
 
+        visited[position->vertex] = true;
         return true;
     }
 
-    // Check if it's a special case
-    // Is the vertex a home? And if yes, does it already have flow?
-    /*if(graph->homes.count(position->vertex) && position->parent->parent != nullptr && graph->nodes[position->vertex] != nullptr) {
-        return false;
     // Is this vertex already visited?
-    } else */if (visited[position->vertex]) {
+    if (visited[position->vertex]) {
         return false;
     // Is this vertex a supermarket and a vout?
     } else if (graph->targets.count(position->vertex-1)) {
         // We need to connect to super target
         int node = graph->getTargetNodePos();
         while(queue->next != nullptr) queue = queue->next;
-        if(!visited[position->vertex] && graph->nodes[position->vertex] == nullptr) {
-            BFSQueue* queueNext = new BFSQueue(BFSNode{node, position});
-            queue->next = queueNext;
-        }
+        BFSQueue* queueNext = new BFSQueue(BFSNode{node, position});
+        queue->next = queueNext;
         visited[position->vertex] = true;
         return false;
     }
@@ -412,7 +405,7 @@ bool visit(BFSQueue* queue, Graph* graph, vector<bool>& visited) {
     if(position->vertex % 2 == 0) {
         // Vertex is odd, therefore a Vin. Enter if it still hasn't a connection to Vout
         int node = position->vertex + 1;
-        if(!visited[node] && graph->nodes[node] == nullptr) {
+        if(graph->nodes[position->vertex] == nullptr) {
             while(queue->next != nullptr) queue = queue->next;
             BFSQueue* queueNext = new BFSQueue(BFSNode{node, position});
             queue->next = queueNext;
@@ -420,7 +413,7 @@ bool visit(BFSQueue* queue, Graph* graph, vector<bool>& visited) {
         // If this Vin has a connection, it means it can flow back.
         vector<int> neighbors = findNeighbors(position->vertex, graph);
         for(vector<int>::iterator iter = neighbors.begin(); iter != neighbors.end(); ++iter) {
-            if(!visited[*iter] && graph->nodes[*iter] != nullptr && graph->nodes[*iter]->data == position->vertex) {
+            if(graph->nodes[*iter] != nullptr && graph->nodes[*iter]->data == position->vertex) {
                 while(queue->next != nullptr) queue = queue->next;
                 BFSQueue* queueNext = new BFSQueue(BFSNode{*iter, position});
                 queue->next = queueNext;
@@ -440,7 +433,7 @@ bool visit(BFSQueue* queue, Graph* graph, vector<bool>& visited) {
         }*/
         for (vector<int>::iterator iter = directions.begin(); iter != directions.end(); ++iter) {
             //cout << "Neighbor is (" << neighbor.avenue << ", " << neighbor.street << "). Visited is " << visitedVertices[neighbor.avenue * graph->numAvenues + neighbor.street] << endl;
-            if(!visited[position->vertex] && (graph->nodes[position->vertex] == nullptr || graph->nodes[position->vertex]->data != *iter)) {
+            if(graph->nodes[position->vertex] == nullptr || graph->nodes[position->vertex]->data != *iter) {
                 while(queue->next != nullptr) queue = queue->next;
                 BFSQueue* queueNext = new BFSQueue(BFSNode{*iter, position});
                 queue->next = queueNext;
@@ -451,7 +444,6 @@ bool visit(BFSQueue* queue, Graph* graph, vector<bool>& visited) {
     // Mark node as visited
     visited[position->vertex] = true;
 
-    //position.children = children;
     return false;
 }
 
@@ -465,13 +457,12 @@ void printQueue(BFSQueue* q) {
 }
 
 int Graph::getMaxSafeFlow() {
-    int match_count = 0;
     bool hasPath = true;
 
-    while(hasPath) {
+    while(hasPath || !homes.empty()) {
         hasPath = false;
         BFSQueue* queue = new BFSQueue();
-        //BFSQueue* head = queue;
+        BFSQueue* head = queue;
 
         BFSNode sourceNode = {getSourceNodePos(), nullptr};
         queue->data = sourceNode;
@@ -479,9 +470,9 @@ int Graph::getMaxSafeFlow() {
         vector<bool> visited = vector<bool>(nodes.size());
         fill(visited.begin(), visited.end(), false);
         //cout << "BFS augmentation" << endl;
+
         while(queue != nullptr) {
             if(visit(queue, this, visited)) {
-                match_count++;
                 hasPath = true;
                 break;
             }
@@ -493,19 +484,25 @@ int Graph::getMaxSafeFlow() {
             queue = queue->next;
         }
 
+        while(head != nullptr) {
+            BFSQueue* p = head;
+            head = head->next;
+            delete p;
+        }
+
         //printQueue(head);
         //delete head;
     }
 
     int connections = 0;
-    for (unordered_set<int>::const_iterator iter = targets.begin(); iter != targets.end(); ++iter) {
+    /*for (unordered_set<int>::const_iterator iter = targets.begin(); iter != targets.end(); ++iter) {
         if(nodes[*iter] != nullptr) connections++;
-    }
-    /*LinkedList* sourceLL = getSourceNode();
+    }*/
+    LinkedList* sourceLL = getSourceNode();
     while(sourceLL != nullptr) {
         connections++;
         sourceLL = sourceLL->next;
-    }*/
+    }
 
     return connections;
     //return match_count;
