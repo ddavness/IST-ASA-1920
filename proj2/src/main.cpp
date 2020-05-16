@@ -178,7 +178,7 @@ int Coordinates::distance(const Coordinates& other) const {
 Graph::Graph(int avenues, int streets): numAvenues(avenues), numStreets(streets) {
     targets = unordered_set<int>();
     homes = unordered_set<int>();
-    
+
     // Initialize all node edges to null
     nodes = vector<LinkedList*>(2 * (avenues * streets) + 2);
     fill(nodes.begin(), nodes.end(), nullptr);
