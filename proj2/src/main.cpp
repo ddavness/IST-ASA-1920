@@ -59,6 +59,18 @@ class BFSNode {
         int8_t children;
 };
 
+struct MultiPath {
+    vector<BFSNode*>& vec;
+    size_t paths;
+};
+
+struct BFSResult {
+    int matches;
+    bool allPathsFound;
+    size_t maxSimultaneous;
+    vector<MultiPath> multipaths;
+};
+
 class Graph {
     public:
         Graph(int, int);
@@ -75,7 +87,9 @@ class Graph {
         int numStreets;
 
     private:
-        bool visit(BFSNode*, queue<BFSNode*>&, vector<BFSNode*>&, vector<int>&);
+        BFSResult performBFS(vector<BFSNode*>&);
+        bool visit(BFSNode*, queue<BFSNode*>&, vector<BFSNode*>&, vector<int16_t>&);
+        void setPath(BFSNode*, Status);
         vector<Status> matrix;
 
         unordered_set<Coordinates> targets;
@@ -207,7 +221,7 @@ const Coordinates DIRECTIONS[4] = {
     Coordinates::delta(0, -1)
 };
 
-bool Graph::visit(BFSNode* node, queue<BFSNode*>& queue, vector<BFSNode*>& heap, vector<int>& matches) {
+bool Graph::visit(BFSNode* node, queue<BFSNode*>& queue, vector<BFSNode*>& heap, vector<int16_t>& matches) {
     // cout << "Visiting " << node -> position.avenue << ',' << node -> position.street << ',' << node -> house << ':' << ' ';
 
     // Remove from the queue, but keep in the heap so that we can clean them in the end
@@ -265,7 +279,22 @@ void printQueue(queue<BFSNode*> q) {
     cout << endl;
 }
 
-int Graph::getMaxSafeFlow() {
+void Graph::setPath(BFSNode* node, Status status) {
+    int i = status == Status::Free ? -1 // -1 if we're cleaning
+          : status == Status::Busy ? 1  // 1 if we're filling
+          : throw;                      // We don't recognize this, throw.
+
+    setMatrixPos(node -> position, status);
+    BFSNode* trace = node -> parent;
+
+    while (trace) {
+        setMatrixPos(trace -> position, status);
+        trace -> children += i;
+        trace = trace -> parent;
+    }
+}
+
+BFSResult Graph::performBFS(vector<BFSNode*>& heap) {
     queue<BFSNode*> BFSQueue;
 
     // Iterate through all homes (more or less arbitrarily)
@@ -276,23 +305,87 @@ int Graph::getMaxSafeFlow() {
         ++c;
     }
 
-    vector<int> matches(c);
-    fill(matches.begin(), matches.end(), -1);
+    vector<vector<BFSNode*>> matches(c);
+    fill(matches.begin(), matches.end(), vector<BFSNode*>());
 
-    vector<BFSNode*> heap = {};
+    vector<int16_t> match_distances(c);
+    fill(match_distances.begin(), match_distances.end(), -1);
+
     int match_count = 0;
 
     while (!BFSQueue.empty()) {
         // cout << "Queue Size: " << BFSQueue.size() << " -> ";
         // printQueue(BFSQueue);
         BFSNode* node = BFSQueue.front();
-        bool match = visit(node, BFSQueue, heap, matches);
+        bool match = visit(node, BFSQueue, heap, match_distances);
         if (match) {
-            matches[node -> house] = node -> distance;
-            ++match_count;
+            matches[node -> house].push_back(node);
+            match_distances[node -> house] = node -> distance;
         }
     }
 
+    bool allPathsFound = true;
+    size_t maxSimultaneous = 0;
+    vector<MultiPath> multipaths = *(new vector<MultiPath>());
+
+    for (vector<vector<BFSNode*>>::iterator it = matches.begin(); it != matches.end(); ++it) {
+        size_t size = (*it).size();
+        ++match_count;
+        allPathsFound = allPathsFound && size;
+        if (size > 1) {
+            maxSimultaneous = max(maxSimultaneous, size);
+            // Preemptively disable all paths (for now)
+            for (vector<BFSNode*>::iterator v = (*it).begin(); v != (*it).end(); ++v) {
+                setPath(*v, Status::Free);
+            }
+            multipaths.push_back({*it, size});
+        } else if (size == 0) {
+            --match_count;
+        }
+    }
+
+    return {
+        match_count,
+        allPathsFound,
+        maxSimultaneous,
+        multipaths
+    };
+}
+
+int Graph::getMaxSafeFlow() {
+    vector<BFSNode*> heap = {};
+
+    BFSResult firstquery = performBFS(heap);
+    int match_count = firstquery.matches;
+    bool allPathsFound = firstquery.allPathsFound;
+    size_t maxSimultaneous = firstquery.maxSimultaneous;
+    vector<MultiPath>& multipaths = firstquery.multipaths;
+
+    if (!allPathsFound && maxSimultaneous > 1) {
+        // Any paths with more than one path found?
+        for (vector<MultiPath>::iterator it = multipaths.begin(); it != multipaths.end(); ++it) {
+            setPath(it -> vec[0], Status::Busy);
+        }
+
+        match_count = max(match_count, performBFS(heap).matches);
+
+        for (size_t i = 1; i < maxSimultaneous; i++) {
+            for (vector<MultiPath>::iterator it = multipaths.begin(); it != multipaths.end(); ++it) {
+                if (i < it -> paths) {
+                    setPath(it -> vec[i - 1], Status::Free);
+                    setPath(it -> vec[i], Status::Busy);
+                }
+            }
+
+            BFSResult res = performBFS(heap);
+            delete(&res.multipaths);
+            match_count = max(match_count, res.matches);
+        }
+    } else {
+        cout << "All done!" << endl;
+    }
+
+    // Final cleanup
     for (vector<BFSNode*>::iterator it = heap.begin(); it != heap.end(); ++it) {
         delete(*it);
     }
