@@ -33,6 +33,7 @@ class Coordinates {
         Coordinates operator() () const;
         bool operator<(Coordinates) const;
         bool operator==(Coordinates) const;
+        friend ostream& operator<<(ostream&, const Coordinates&);
         int distance(const Coordinates&) const;
         int avenue;
         int street;
@@ -60,7 +61,7 @@ class BFSNode {
 };
 
 struct MultiPath {
-    vector<BFSNode*>& vec;
+    vector<BFSNode*> vec;
     size_t paths;
 };
 
@@ -115,7 +116,6 @@ int main() {
         Coordinates c(a, s);
         city.addSupermarket(Coordinates(a, s));
     }
-    // cout << endl;
 
     for (int i = 0; i < citizens; ++i) {
         cin >> a;
@@ -147,6 +147,10 @@ bool Coordinates::operator<(Coordinates other) const {
 }
 bool Coordinates::operator==(Coordinates other) const {
     return avenue == other.avenue && street == other.street;
+}
+
+ostream& operator<<(ostream& original, const Coordinates& coords) {
+    return original << '(' << coords.avenue + 1 << ',' << coords.street + 1 << ')';
 }
 
 int Coordinates::distance(const Coordinates& other) const {
@@ -222,7 +226,9 @@ const Coordinates DIRECTIONS[4] = {
 };
 
 bool Graph::visit(BFSNode* node, queue<BFSNode*>& queue, vector<BFSNode*>& heap, vector<int16_t>& matches) {
-    // cout << "Visiting " << node -> position.avenue << ',' << node -> position.street << ',' << node -> house << ':' << ' ';
+    // cout << "Visiting " << node -> position << node -> house << ':' << ' ';
+
+    (void)matches;
 
     // Remove from the queue, but keep in the heap so that we can clean them in the end
     heap.push_back(node);
@@ -230,9 +236,54 @@ bool Graph::visit(BFSNode* node, queue<BFSNode*>& queue, vector<BFSNode*>& heap,
 
     Coordinates coords = node -> position;
 
-    if (getMatrixPos(coords) != Status::Free || (matches[node -> house] >= 0 && matches[node -> house] < node -> distance)) {
+    if (getMatrixPos(coords) != Status::Free /*|| (matches[node -> house] >= 0 && matches[node -> house] < node -> distance)*/) {
         // cout << " Already in use!" << endl;
         // Traceback
+        // cout << " > > FREED: " << node -> position << " <- ";
+        BFSNode* trace = node -> parent;
+        while (trace) {
+            --trace -> children;
+            if (trace -> children == 0) {
+                // cout << trace -> position;
+                setMatrixPos(trace -> position, Status::Free);
+                trace = trace -> parent;
+            } else {
+                break;
+            }
+        }
+        // cout << endl;
+        return false;
+    } else if (targets.find(node -> position) != targets.end()) {
+        // cout << " Found!" << endl << endl;
+        // cout << " > > PATH: ";
+        // We found it! Lock the paths!
+        BFSNode* trace = node;
+        while (trace) {
+            // cout << trace -> position << " <- ";
+            setMatrixPos(trace -> position, Status::Busy);
+            trace = trace -> parent;
+        }
+        // cout << endl << endl;
+        return true;
+    }
+
+    // cout << " Not there yet..." << endl;
+    setMatrixPos(node -> position, Status::Temp);
+    int8_t children = 0;
+
+    for (int i = 0; i < 4; ++i) {
+        Coordinates neighbor = node -> position + DIRECTIONS[i];
+        // cout << neighbor << " is " << (getMatrixPos(neighbor) == Status::Free ? "Free" : "Busy") << endl;
+        if (getMatrixPos(neighbor) == Status::Free) {   // Check if vertex is unvisited
+            ++children;
+            queue.push(new BFSNode(neighbor, node -> house, node));
+        }
+    }
+
+    if (!children) {
+        // Dead end, traceback
+        // cout << " > Turns out it's a dead end" << endl;
+        setMatrixPos(node -> position, Status::Free);
         BFSNode* trace = node -> parent;
         while (trace) {
             --trace -> children;
@@ -243,40 +294,19 @@ bool Graph::visit(BFSNode* node, queue<BFSNode*>& queue, vector<BFSNode*>& heap,
                 break;
             }
         }
-        return false;
-    } else if (targets.find(node -> position) != targets.end()) {
-        // cout << " Found!" << endl;
-        // We found it! Lock the paths!
-        BFSNode* trace = node;
-        while (trace) {
-            setMatrixPos(trace -> position, Status::Busy);
-            trace = trace -> parent;
-        }
-        return true;
+    } else {
+        node -> children = children;
     }
 
-    // cout << " Not there yet..." << endl;
-    setMatrixPos(node -> position, Status::Temp);
-    int8_t children = 0;
-
-    for (int i = 0; i < 4; ++i) {
-        Coordinates neighbor = node -> position + DIRECTIONS[i];
-        if (getMatrixPos(neighbor) == Status::Free) {   // Check if vertex is unvisited
-            ++children;
-            queue.push(new BFSNode(neighbor, node -> house, node));
-        }
-    }
-
-    node -> children = children;
     return false;
 }
 
 void printQueue(queue<BFSNode*> q) {
     while(!q.empty()) {
-        cout << "(" << q.front() -> position.avenue << ", " << q.front() -> position.street << ") ";
+        // cout << q.front() -> position << ' ';
         q.pop();
     }
-    cout << endl;
+    // cout << endl;
 }
 
 void Graph::setPath(BFSNode* node, Status status) {
@@ -287,14 +317,20 @@ void Graph::setPath(BFSNode* node, Status status) {
     setMatrixPos(node -> position, status);
     BFSNode* trace = node -> parent;
 
+    // cout << '\n' << '\n' << " > > PATH CHANGED (" << i << "): " << node -> position << " <- ";
+
     while (trace) {
+        // cout << trace -> position << " <- ";
         setMatrixPos(trace -> position, status);
         trace -> children += i;
         trace = trace -> parent;
     }
+
+    // cout << '\n' << '\n';
 }
 
 BFSResult Graph::performBFS(vector<BFSNode*>& heap) {
+    // cout << "BFS BEGIN" << endl;
     queue<BFSNode*> BFSQueue;
 
     // Iterate through all homes (more or less arbitrarily)
@@ -315,7 +351,7 @@ BFSResult Graph::performBFS(vector<BFSNode*>& heap) {
 
     while (!BFSQueue.empty()) {
         // cout << "Queue Size: " << BFSQueue.size() << " -> ";
-        // printQueue(BFSQueue);
+        printQueue(BFSQueue);
         BFSNode* node = BFSQueue.front();
         bool match = visit(node, BFSQueue, heap, match_distances);
         if (match) {
@@ -326,7 +362,7 @@ BFSResult Graph::performBFS(vector<BFSNode*>& heap) {
 
     bool allPathsFound = true;
     size_t maxSimultaneous = 0;
-    vector<MultiPath> multipaths = *(new vector<MultiPath>());
+    vector<MultiPath> multipaths;
 
     for (vector<vector<BFSNode*>>::iterator it = matches.begin(); it != matches.end(); ++it) {
         size_t size = (*it).size();
@@ -344,11 +380,12 @@ BFSResult Graph::performBFS(vector<BFSNode*>& heap) {
         }
     }
 
+    // cout << "BFS END" << endl;
     return {
         match_count,
         allPathsFound,
         maxSimultaneous,
-        multipaths
+        move(multipaths)
     };
 }
 
@@ -367,7 +404,7 @@ int Graph::getMaxSafeFlow() {
             setPath(it -> vec[0], Status::Busy);
         }
 
-        match_count = max(match_count, performBFS(heap).matches);
+        match_count += getMaxSafeFlow();
 
         for (size_t i = 1; i < maxSimultaneous; i++) {
             for (vector<MultiPath>::iterator it = multipaths.begin(); it != multipaths.end(); ++it) {
@@ -377,12 +414,10 @@ int Graph::getMaxSafeFlow() {
                 }
             }
 
-            BFSResult res = performBFS(heap);
-            delete(&res.multipaths);
-            match_count = max(match_count, res.matches);
+            match_count += getMaxSafeFlow();
         }
     } else {
-        cout << "All done!" << endl;
+        // cout << "All done!" << endl;
     }
 
     // Final cleanup
