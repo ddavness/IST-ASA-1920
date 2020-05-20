@@ -13,6 +13,8 @@
 #include <limits>
 #include <unordered_set>
 #include <functional>
+#include <map>
+#include <set>
 
 using namespace std;
 
@@ -93,6 +95,9 @@ class Graph {
 
         unordered_set<int> targets;
         unordered_set<int> homes;
+
+        // Temp Debug
+        map<int, int> connections;
 
         int numAvenues;
         int numStreets;
@@ -178,6 +183,7 @@ int Coordinates::distance(const Coordinates& other) const {
 Graph::Graph(int avenues, int streets): numAvenues(avenues), numStreets(streets) {
     targets = unordered_set<int>();
     homes = unordered_set<int>();
+    connections = map<int, int>();
     
     // Initialize all node edges to null
     nodes = vector<LinkedList*>(2 * (avenues * streets) + 2);
@@ -215,11 +221,13 @@ Coordinates Graph::toPos(const int& index) const {
 }*/
 
 void Graph::addSupermarket(const int& a, const int& s) {
-    targets.insert(2*((a-1) * numStreets + (s - 1)));
+    if(targets.count(2*((a-1) * numStreets + (s - 1))) == 0)
+        targets.insert(2*((a-1) * numStreets + (s - 1)));
 }
 
 void Graph::addHome(const int& a, const int& s) {
-    homes.insert(2*((a-1) * numStreets + (s - 1)));
+    if(homes.count(2*((a-1) * numStreets + (s - 1))) == 0)
+        homes.insert(2*((a-1) * numStreets + (s - 1)));
 }
 
 LinkedList* Graph::getSourceNode() {
@@ -362,24 +370,28 @@ bool visit(BFSQueue* queue, Graph* graph, vector<bool>& visited) {
         // Super target - BFS is over
         //cout << "Super target" << endl;
         BFSNode* trace = position;
+        int targetV = trace->parent->vertex;
         //cout << "Trace: ";
         do {
             int child = trace->vertex;
             //cout << child << " ";
             trace = trace->parent;
-            // If child is connected to parent, it's a residual path; delete it
-            if(graph->nodes[child] != nullptr && graph->nodes[child]->data == trace->vertex) {
-                delete graph->nodes[child];
-                graph->nodes[child] = nullptr;
+            // If child is connected to parent, it's a residual path; it was
+            // overwritten in the last loop, so now we need to skip it
+            //if(graph->nodes[child] != nullptr && graph->nodes[child]->data == trace->vertex) {
             // Else we connect the child to the parent
-            } else {
-                LinkedList* ll = new LinkedList(child);
-                if(trace->vertex == graph->getSourceNodePos())
-                    ll->next = graph->nodes[trace->vertex];
-                else
-                    delete graph->nodes[trace->vertex];
+            LinkedList* ll = new LinkedList(child);
+            if(trace->vertex == graph->getSourceNodePos())
+                ll->next = graph->nodes[trace->vertex];
+            else if(graph->nodes[trace->vertex] == nullptr)
                 graph->nodes[trace->vertex] = ll;
+            else {
+                // Parent has a connection; it's augmenting path
+                graph->nodes[trace->vertex] = ll;
+                trace = trace->parent;
             }
+            if(trace->parent != nullptr && trace->parent->parent == nullptr)
+                graph->connections[trace->vertex] = targetV - 1;
         } while(trace->parent != nullptr);
         //cout << trace->vertex << endl;
 
@@ -456,11 +468,56 @@ void printQueue(BFSQueue* q) {
     cout << endl;
 }
 
-int Graph::getMaxSafeFlow() {
-    bool hasPath = true;
+string indToCoord(int v, Graph* g) {
+    string ret = "(";
+    int a = (v / 2) / g->numStreets + 1;
+    int s = (v / 2) % g->numStreets + 1;
+    return ret + to_string(a) + ", " + to_string(s) + ")";
+}
 
-    while(hasPath || !homes.empty()) {
-        hasPath = false;
+void dumpGraph(Graph* g, unordered_set<int> origHomes) {
+    cout << "Dumping completed graph..." << endl << endl;
+    cout << "C: " << origHomes.size() << "\t\tS: " << g->targets.size() << endl;
+    cout << "-------------------------------" << endl;
+    cout << "|    Vertex    | Connected to |" << endl;
+    cout << "-------------------------------" << endl;
+    for(unordered_set<int>::iterator it = origHomes.begin(); it != origHomes.end(); ++it) {
+        if(g->nodes[*it] == nullptr) {
+            cout << "| " << *it << " | " << "None" << endl;
+            //cout << "| " << indToCoord(*it, g) << " | " << "None" << endl;
+        } else {
+            int to = g->connections[*it];
+            //cout << "| " << indToCoord(*it, g) << " | "  << indToCoord(to, g) << endl;
+            cout << "| " << *it << " | "  << to << endl;
+        }
+    }
+    cout << "-------------------------------" << endl << endl;
+    cout << "Dumping traces..." << endl << endl;
+    for(unordered_set<int>::iterator it = origHomes.begin(); it != origHomes.end(); ++it) {
+        if(g->nodes[*it] != nullptr) {
+            cout << *it << " -> " << *it << " ";
+            //cout << indToCoord(*it, g) << " -> " << indToCoord(*it, g) << " ";
+            int i = *it;
+            while(i != g->getTargetNodePos()) {
+                i = g->nodes[i]->data;
+                //if(i % 2 == 0)
+                //    cout << indToCoord(i, g) << " ";
+                cout << i << " ";
+            }
+        }
+        cout << endl;
+    }
+
+    cout << "Dumping done" << endl;
+}
+
+int Graph::getMaxSafeFlow() {
+    //bool hasPath = true;
+
+    unordered_set<int> origHomes = homes;
+
+    while(/*hasPath ||*/ !homes.empty()) {
+        //hasPath = false;
         BFSQueue* queue = new BFSQueue();
         BFSQueue* head = queue;
 
@@ -471,16 +528,23 @@ int Graph::getMaxSafeFlow() {
         fill(visited.begin(), visited.end(), false);
         //cout << "BFS augmentation" << endl;
 
+        //bool once = true;
         while(queue != nullptr) {
             if(visit(queue, this, visited)) {
-                hasPath = true;
+                //hasPath = true;
                 break;
             }
+            /*if(once) {
+                once = false;
+                if(queue->next)
+                cout << "Visiting vertex " << queue->next->data.vertex << "..." << endl;
+            }*/
             // If, after a single BFS visit, it has no children, it means no augmenting paths exist
             /*if(head->next == nullptr) {
                 done = true;
                 break;
             }*/
+            //printQueue(queue);
             queue = queue->next;
         }
 
@@ -490,19 +554,23 @@ int Graph::getMaxSafeFlow() {
             delete p;
         }
 
+        //dumpGraph(this, origHomes);
+
         //printQueue(head);
         //delete head;
     }
 
     int connections = 0;
-    /*for (unordered_set<int>::const_iterator iter = targets.begin(); iter != targets.end(); ++iter) {
+    for (unordered_set<int>::const_iterator iter = targets.begin(); iter != targets.end(); ++iter) {
         if(nodes[*iter] != nullptr) connections++;
-    }*/
-    LinkedList* sourceLL = getSourceNode();
+    }
+    /*LinkedList* sourceLL = getSourceNode();
     while(sourceLL != nullptr) {
         connections++;
         sourceLL = sourceLL->next;
-    }
+    }*/
+
+    //dumpGraph(this, origHomes);
 
     return connections;
     //return match_count;
