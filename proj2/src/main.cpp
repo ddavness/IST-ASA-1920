@@ -5,14 +5,10 @@
     Ricardo Jorge Santos Subtil. nº 93752
 */
 
-#include <algorithm>
 #include <iostream>
 #include <string>
 #include <vector>
-#include <queue>
-#include <limits>
-#include <unordered_set>
-#include <functional>
+#include <set>
 
 using namespace std;
 
@@ -68,8 +64,8 @@ class Graph {
 
         int getMaxSafeFlow();
 
-        unordered_set<int> targets;
-        unordered_set<int> homes;
+        set<int> targets;
+        set<int> homes;
 
         int numAvenues;
         int numStreets;
@@ -129,16 +125,16 @@ BFSQueue::BFSQueue(BFSNode data)
 // City graph
 
 Graph::Graph(int avenues, int streets): numAvenues(avenues), numStreets(streets) {
-    targets = unordered_set<int>();
-    homes = unordered_set<int>();
+    targets = set<int>();
+    homes = set<int>();
 
     // Initialize all node edges to null
     nodes = vector<LinkedList*>(2 * (avenues * streets) + 2);
     fill(nodes.begin(), nodes.end(), nullptr);
 
     // Add source and target nodes
-    nodes[(avenues*streets)] = nullptr;
-    nodes[(avenues*streets)+1] = nullptr;
+    nodes[2 * (avenues*streets)] = nullptr;
+    nodes[2 * (avenues*streets) + 1] = nullptr;
     //matrix = new Status[avenues * streets];
     // Initialize the matrix
     //fill(matrix, &(matrix[avenues * streets]), Status::Free);
@@ -217,7 +213,7 @@ vector<int> findNeighbors(int vertex, Graph* graph) {
 
 bool visit(BFSQueue* queue, Graph* graph, vector<bool>& visited) {
     BFSNode* position = &queue->data;
-    //cout << "Visiting " << position->vertex << "\n";
+    // cout << "Visiting " << position->vertex << "\n";
 
     // Check if it's either the super source or super target
     if(position->vertex == graph->getSourceNodePos()) {
@@ -384,7 +380,7 @@ int Graph::getMaxSafeFlow() {
     }*/
     LinkedList* sourceLL = getSourceNode();
     while(sourceLL != nullptr) {
-        connections++;
+        ++connections;
         sourceLL = sourceLL->next;
     }
 
