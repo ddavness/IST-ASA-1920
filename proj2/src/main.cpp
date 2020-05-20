@@ -5,16 +5,11 @@
     Ricardo Jorge Santos Subtil. nº 93752
 */
 
-#include <algorithm>
 #include <iostream>
 #include <string>
 #include <vector>
-#include <queue>
-#include <limits>
 #include <unordered_set>
-#include <functional>
 #include <map>
-#include <set>
 
 using namespace std;
 
@@ -51,36 +46,14 @@ public:
     BFSQueue *next = nullptr;
 };
 
-/*class Coordinates {
-    public:
-        Coordinates(int, int);
-        Coordinates operator+(const Coordinates&) const;
-        Coordinates operator-() const;
-        Coordinates operator() () const;
-        bool operator<(Coordinates) const;
-        bool operator==(Coordinates) const;
-        int distance(const Coordinates&) const;
-        int avenue;
-        int street;
-};
-
-// Define hash for coordinates
-namespace std {
-    template<>
-        struct hash<Coordinates> {
-            size_t operator()(const Coordinates& obj) const {
-                return hash<string>()(to_string(obj.avenue) + ',' + to_string(obj.street));
-            }
-        };
-}*/
-
 class Graph {
     public:
         Graph(int, int);
+        ~Graph();
         //int distanceToNearestSupermarket(Coordinates&) const;
         //bool operator() (Coordinates&, Coordinates&) const;
-        void addSupermarket(const int&, const int&);
-        void addHome(const int&, const int&);
+        void addSupermarket(const int, const int);
+        void addHome(const int, const int);
         //LinkedList* getMatrixPos(const Coordinates&) const;
         //void setMatrixPos(const Coordinates&, LinkedList* value);
         LinkedList* getSourceNode();
@@ -133,7 +106,7 @@ int main() {
 
     cout << city.getMaxSafeFlow() << endl;
 
-    exit(EXIT_SUCCESS);
+    return EXIT_SUCCESS;
 }
 
 // Coordinates
@@ -154,30 +127,6 @@ BFSQueue::BFSQueue()
 BFSQueue::BFSQueue(BFSNode data)
     : data(data) {}
 
-/*BFSQueue::~BFSQueue()
-{
-    if(next) delete next;
-}*/
-
-/*Coordinates::Coordinates(int a, int s): avenue(a), street(s) {}
-
-Coordinates Coordinates::operator+(const Coordinates& other) const {
-    return Coordinates(avenue + other.avenue, street + other.street);
-}
-Coordinates Coordinates::operator-() const {
-    return Coordinates(-avenue, -street);
-}
-bool Coordinates::operator<(Coordinates other) const {
-    return avenue < other.avenue || (avenue == other.avenue && street < other.street);
-}
-bool Coordinates::operator==(Coordinates other) const {
-    return avenue == other.avenue && street == other.street;
-}
-
-int Coordinates::distance(const Coordinates& other) const {
-    return abs(avenue - other.avenue) + abs(street - other.street);
-}*/
-
 // City graph
 
 Graph::Graph(int avenues, int streets): numAvenues(avenues), numStreets(streets) {
@@ -190,42 +139,29 @@ Graph::Graph(int avenues, int streets): numAvenues(avenues), numStreets(streets)
     fill(nodes.begin(), nodes.end(), nullptr);
 
     // Add source and target nodes
-    nodes[(avenues*streets)] = nullptr;
-    nodes[(avenues*streets)+1] = nullptr;
+    nodes[2 * (avenues*streets)] = nullptr;
+    nodes[2 * (avenues*streets) + 1] = nullptr;
     //matrix = new Status[avenues * streets];
     // Initialize the matrix
     //fill(matrix, &(matrix[avenues * streets]), Status::Free);
 }
 
-/*int Graph::distanceToNearestSupermarket(Coordinates& start) const {
-    double distance = numeric_limits<double>::infinity();
-
-    for (unordered_set<Coordinates>::const_iterator iter = targets.begin(); iter != targets.end(); ++iter) {
-        int newDist = start.distance(*iter);
-        distance = min(distance, static_cast<double>(newDist));
+Graph::~Graph() {
+    for (vector<LinkedList*>::iterator i = nodes.begin(); i != nodes.end(); ++i) {
+        if (*i) {
+            delete *i;
+        }
     }
 
-    return static_cast<int>(distance);
+    nodes.clear();
 }
 
-bool Graph::operator() (Coordinates& alpha, Coordinates& beta) const {
-    return distanceToNearestSupermarket(alpha) < distanceToNearestSupermarket(beta);
-}*/
-
-/*int Graph::toIndex(const Coordinates& pos) const {
-    return (pos.avenue - 1) * numStreets + (pos.street - 1);
-}
-
-Coordinates Graph::toPos(const int& index) const {
-    return Coordinates((index / numStreets) + 1, (index % numStreets) + 1);
-}*/
-
-void Graph::addSupermarket(const int& a, const int& s) {
+void Graph::addSupermarket(const int a, const int s) {
     if(targets.count(2*((a-1) * numStreets + (s - 1))) == 0)
         targets.insert(2*((a-1) * numStreets + (s - 1)));
 }
 
-void Graph::addHome(const int& a, const int& s) {
+void Graph::addHome(const int a, const int s) {
     if(homes.count(2*((a-1) * numStreets + (s - 1))) == 0)
         homes.insert(2*((a-1) * numStreets + (s - 1)));
 }
@@ -245,52 +181,6 @@ LinkedList* Graph::getTargetNode() {
 int Graph::getTargetNodePos() {
     return 2 * (numAvenues * numStreets) + 1;
 }
-
-/*BFSNode* Graph::getFreeHome() {
-    for (unordered_set<Coordinates>::const_iterator iter = targets.begin(); iter != targets.end(); ++iter) {
-        LinkedList* sourceLL = &source;
-        Coordinates coord = (*iter);
-        bool found = false;
-        while(!found && sourceLL != nullptr) {
-            int index = (coord.avenue - 1) * numAvenues + (coord.street - 1);
-            if(sourceLL->data == index) {
-                found = true;
-                break;
-            }
-        }
-        if(found) {
-            continue;
-        } else {
-            return BFSNode(coord, nullptr, 0, 0, 0);
-        }
-    }
-}*/
-
-// getMatrixPos returns info of Vin
-/*LinkedList* Graph::getMatrixPos(const Coordinates& coord) const {
-    if (coord.avenue < 1 || coord.street < 1 || coord.avenue > numAvenues || coord.street > numStreets) {
-        throw; // Nothing here, go back!
-    }
-    return nodes[2 * toIndex(coord)];
-}
-
-// setMatrixPos sets info for Vout
-void Graph::setMatrixPos(const Coordinates& coord, LinkedList* edges) {
-    if (coord.avenue < 1 || coord.street < 1 || coord.avenue > numAvenues || coord.street > numStreets) {
-        throw; // Nothing here!
-    }
-    LinkedList* old = nodes[2*toIndex(coord) + 1];
-    edges->next = old;
-    nodes[2*toIndex(coord) + 1] = edges;
-}*/
-
-// ALGORITHM SPECIFICS
-/*const Coordinates DIRECTIONS[4] = {
-    Coordinates(1, 0),
-    Coordinates(0, 1),
-    Coordinates(-1, 0),
-    Coordinates(0, -1)
-};*/
 
 vector<int> findNeighbors(int vertex, Graph* graph) {
     vector<int> directions;
@@ -340,8 +230,8 @@ vector<int> findNeighbors(int vertex, Graph* graph) {
 }
 
 bool visit(BFSQueue* queue, Graph* graph, vector<bool>& visited) {
-    BFSNode* position = &queue->data;
-    //cout << "Visiting " << position->vertex << "\n";
+    BFSNode* position = &(queue->data);
+    // cout << "Visiting " << position->vertex << "\n";
 
     // Check if it's either the super source or super target
     if(position->vertex == graph->getSourceNodePos()) {
@@ -359,8 +249,10 @@ bool visit(BFSQueue* queue, Graph* graph, vector<bool>& visited) {
         } else {
             // Augmenting path; Add it
             int node = (*(graph->homes.begin()));
-            graph->homes.erase(node);
-            while(queue->next != nullptr) queue = queue->next;
+            graph->homes.erase(graph->homes.begin());
+            while(queue->next != nullptr) {
+                queue = queue->next;
+            }
             BFSQueue* queueNext = new BFSQueue(BFSNode{node, position});
             queue->next = queueNext;
             visited[position->vertex] = true;
@@ -403,10 +295,12 @@ bool visit(BFSQueue* queue, Graph* graph, vector<bool>& visited) {
     if (visited[position->vertex]) {
         return false;
     // Is this vertex a supermarket and a vout?
-    } else if (graph->targets.count(position->vertex-1)) {
+    } else if (graph->targets.find(position->vertex - 1) != graph->targets.end()) {
         // We need to connect to super target
         int node = graph->getTargetNodePos();
-        while(queue->next != nullptr) queue = queue->next;
+        while(queue->next != nullptr) {
+            queue = queue->next;
+        }
         BFSQueue* queueNext = new BFSQueue(BFSNode{node, position});
         queue->next = queueNext;
         visited[position->vertex] = true;
@@ -415,10 +309,12 @@ bool visit(BFSQueue* queue, Graph* graph, vector<bool>& visited) {
 
     // There are no special cases, so visit all it's neighbors
     if(position->vertex % 2 == 0) {
-        // Vertex is odd, therefore a Vin. Enter if it still hasn't a connection to Vout
+        // Vertex is even, therefore a Vin. Enter if it still hasn't a connection to Vout
         int node = position->vertex + 1;
         if(graph->nodes[position->vertex] == nullptr) {
-            while(queue->next != nullptr) queue = queue->next;
+            while(queue->next != nullptr) {
+                queue = queue->next;
+            }
             BFSQueue* queueNext = new BFSQueue(BFSNode{node, position});
             queue->next = queueNext;
         }
@@ -426,18 +322,21 @@ bool visit(BFSQueue* queue, Graph* graph, vector<bool>& visited) {
         vector<int> neighbors = findNeighbors(position->vertex, graph);
         for(vector<int>::iterator iter = neighbors.begin(); iter != neighbors.end(); ++iter) {
             if(graph->nodes[*iter] != nullptr && graph->nodes[*iter]->data == position->vertex) {
-                while(queue->next != nullptr) queue = queue->next;
+                while(queue->next != nullptr) {
+                    queue = queue->next;
+                }
                 BFSQueue* queueNext = new BFSQueue(BFSNode{*iter, position});
                 queue->next = queueNext;
             }
         }
     } else {
-        // Vertex is even, therefore a Vout
+        // Vertex is odd, therefore a Vout
         vector<int> directions = findNeighbors(position->vertex, graph);
 
         // If Vout has flow, it means Vin is sending it
-        if(graph->nodes[position->vertex-1] != nullptr)
+        if(graph->nodes[position->vertex-1] != nullptr) {
             directions.push_back(position->vertex-1);
+        }
 
         // Remove from the options the current connection, if there's any
         /*if(graph->nodes[position->vertex] != nullptr) {
@@ -513,8 +412,7 @@ void dumpGraph(Graph* g, unordered_set<int> origHomes) {
 
 int Graph::getMaxSafeFlow() {
     //bool hasPath = true;
-
-    unordered_set<int> origHomes = homes;
+    int interim = 0;
 
     while(/*hasPath ||*/ !homes.empty()) {
         //hasPath = false;
@@ -530,8 +428,10 @@ int Graph::getMaxSafeFlow() {
 
         //bool once = true;
         while(queue != nullptr) {
+            //printQueue(queue);
             if(visit(queue, this, visited)) {
                 //hasPath = true;
+                ++interim;
                 break;
             }
             /*if(once) {
@@ -566,26 +466,12 @@ int Graph::getMaxSafeFlow() {
     }
     /*LinkedList* sourceLL = getSourceNode();
     while(sourceLL != nullptr) {
-        connections++;
+        ++connections;
         sourceLL = sourceLL->next;
     }*/
 
     //dumpGraph(this, origHomes);
 
+    //cout << interim << endl;
     return connections;
-    //return match_count;
-
-    /*vector<int> visitedVertices(numAvenues * numStreets);
-    vector<BFSNode> heap = {};
-
-    fill(visitedVertices.begin(), visitedVertices.end(), 0);
-
-    while (!BFSQueue.empty()) {
-        cout << "Queue Size: " << BFSQueue.size() << " -> ";
-        printQueue(BFSQueue);
-        bool match = visit(BFSQueue.front(), this, BFSQueue, visitedVertices, heap);
-        if (match) {
-            ++match_count;
-        }
-    }*/
 }
