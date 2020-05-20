@@ -49,29 +49,6 @@ public:
     BFSQueue *next = nullptr;
 };
 
-/*class Coordinates {
-    public:
-        Coordinates(int, int);
-        Coordinates operator+(const Coordinates&) const;
-        Coordinates operator-() const;
-        Coordinates operator() () const;
-        bool operator<(Coordinates) const;
-        bool operator==(Coordinates) const;
-        int distance(const Coordinates&) const;
-        int avenue;
-        int street;
-};
-
-// Define hash for coordinates
-namespace std {
-    template<>
-        struct hash<Coordinates> {
-            size_t operator()(const Coordinates& obj) const {
-                return hash<string>()(to_string(obj.avenue) + ',' + to_string(obj.street));
-            }
-        };
-}*/
-
 class Graph {
     public:
         Graph(int, int);
@@ -149,30 +126,6 @@ BFSQueue::BFSQueue()
 BFSQueue::BFSQueue(BFSNode data)
     : data(data) {}
 
-/*BFSQueue::~BFSQueue()
-{
-    if(next) delete next;
-}*/
-
-/*Coordinates::Coordinates(int a, int s): avenue(a), street(s) {}
-
-Coordinates Coordinates::operator+(const Coordinates& other) const {
-    return Coordinates(avenue + other.avenue, street + other.street);
-}
-Coordinates Coordinates::operator-() const {
-    return Coordinates(-avenue, -street);
-}
-bool Coordinates::operator<(Coordinates other) const {
-    return avenue < other.avenue || (avenue == other.avenue && street < other.street);
-}
-bool Coordinates::operator==(Coordinates other) const {
-    return avenue == other.avenue && street == other.street;
-}
-
-int Coordinates::distance(const Coordinates& other) const {
-    return abs(avenue - other.avenue) + abs(street - other.street);
-}*/
-
 // City graph
 
 Graph::Graph(int avenues, int streets): numAvenues(avenues), numStreets(streets) {
@@ -190,29 +143,6 @@ Graph::Graph(int avenues, int streets): numAvenues(avenues), numStreets(streets)
     // Initialize the matrix
     //fill(matrix, &(matrix[avenues * streets]), Status::Free);
 }
-
-/*int Graph::distanceToNearestSupermarket(Coordinates& start) const {
-    double distance = numeric_limits<double>::infinity();
-
-    for (unordered_set<Coordinates>::const_iterator iter = targets.begin(); iter != targets.end(); ++iter) {
-        int newDist = start.distance(*iter);
-        distance = min(distance, static_cast<double>(newDist));
-    }
-
-    return static_cast<int>(distance);
-}
-
-bool Graph::operator() (Coordinates& alpha, Coordinates& beta) const {
-    return distanceToNearestSupermarket(alpha) < distanceToNearestSupermarket(beta);
-}*/
-
-/*int Graph::toIndex(const Coordinates& pos) const {
-    return (pos.avenue - 1) * numStreets + (pos.street - 1);
-}
-
-Coordinates Graph::toPos(const int& index) const {
-    return Coordinates((index / numStreets) + 1, (index % numStreets) + 1);
-}*/
 
 void Graph::addSupermarket(const int& a, const int& s) {
     targets.insert(2*((a-1) * numStreets + (s - 1)));
@@ -237,52 +167,6 @@ LinkedList* Graph::getTargetNode() {
 int Graph::getTargetNodePos() {
     return 2 * (numAvenues * numStreets) + 1;
 }
-
-/*BFSNode* Graph::getFreeHome() {
-    for (unordered_set<Coordinates>::const_iterator iter = targets.begin(); iter != targets.end(); ++iter) {
-        LinkedList* sourceLL = &source;
-        Coordinates coord = (*iter);
-        bool found = false;
-        while(!found && sourceLL != nullptr) {
-            int index = (coord.avenue - 1) * numAvenues + (coord.street - 1);
-            if(sourceLL->data == index) {
-                found = true;
-                break;
-            }
-        }
-        if(found) {
-            continue;
-        } else {
-            return BFSNode(coord, nullptr, 0, 0, 0);
-        }
-    }
-}*/
-
-// getMatrixPos returns info of Vin
-/*LinkedList* Graph::getMatrixPos(const Coordinates& coord) const {
-    if (coord.avenue < 1 || coord.street < 1 || coord.avenue > numAvenues || coord.street > numStreets) {
-        throw; // Nothing here, go back!
-    }
-    return nodes[2 * toIndex(coord)];
-}
-
-// setMatrixPos sets info for Vout
-void Graph::setMatrixPos(const Coordinates& coord, LinkedList* edges) {
-    if (coord.avenue < 1 || coord.street < 1 || coord.avenue > numAvenues || coord.street > numStreets) {
-        throw; // Nothing here!
-    }
-    LinkedList* old = nodes[2*toIndex(coord) + 1];
-    edges->next = old;
-    nodes[2*toIndex(coord) + 1] = edges;
-}*/
-
-// ALGORITHM SPECIFICS
-/*const Coordinates DIRECTIONS[4] = {
-    Coordinates(1, 0),
-    Coordinates(0, 1),
-    Coordinates(-1, 0),
-    Coordinates(0, -1)
-};*/
 
 vector<int> findNeighbors(int vertex, Graph* graph) {
     vector<int> directions;
