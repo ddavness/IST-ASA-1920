@@ -48,6 +48,7 @@ public:
 class Graph {
     public:
         Graph(int, int);
+        ~Graph();
         //int distanceToNearestSupermarket(Coordinates&) const;
         //bool operator() (Coordinates&, Coordinates&) const;
         void addSupermarket(const int, const int);
@@ -138,6 +139,16 @@ Graph::Graph(int avenues, int streets): numAvenues(avenues), numStreets(streets)
     //matrix = new Status[avenues * streets];
     // Initialize the matrix
     //fill(matrix, &(matrix[avenues * streets]), Status::Free);
+}
+
+Graph::~Graph() {
+    for (vector<LinkedList*>::iterator i = nodes.begin(); i != nodes.end(); ++i) {
+        if (*i) {
+            delete *i;
+        }
+    }
+
+    nodes.clear();
 }
 
 void Graph::addSupermarket(const int a, const int s) {
@@ -362,6 +373,7 @@ int Graph::getMaxSafeFlow() {
         //cout << "BFS augmentation" << endl;
 
         while(queue != nullptr) {
+            //printQueue(queue);
             if(visit(queue, this, visited)) {
                 hasPath = true;
                 ++interim;
@@ -381,7 +393,6 @@ int Graph::getMaxSafeFlow() {
             delete p;
         }
 
-        //printQueue(head);
         //delete head;
     }
 
