@@ -9,16 +9,8 @@
 #include <string>
 #include <vector>
 #include <unordered_set>
-#include <map>
-#include <set>
 
 using namespace std;
-
-/*enum class Status: int8_t {
-    Busy = 0,
-    Free = 1,
-    Temp = 2,
-};*/
 
 class LinkedList
 {
@@ -41,7 +33,6 @@ class BFSQueue
 public:
     BFSQueue();
     BFSQueue(BFSNode);
-    //~BFSQueue();
 
     BFSNode data;
     BFSQueue *next = nullptr;
@@ -51,29 +42,17 @@ class Graph {
     public:
         Graph(int, int);
         ~Graph();
-        //int distanceToNearestSupermarket(Coordinates&) const;
-        //bool operator() (Coordinates&, Coordinates&) const;
         void addSupermarket(const int, const int);
         void addHome(const int, const int);
-        //LinkedList* getMatrixPos(const Coordinates&) const;
-        //void setMatrixPos(const Coordinates&, LinkedList* value);
         LinkedList* getSourceNode();
         int getSourceNodePos();
         LinkedList* getTargetNode();
         int getTargetNodePos();
-        BFSNode* getFreeHome();
-        //int toIndex(const Coordinates&) const;
-        //Coordinates toPos(const int&) const;
-        void shuffleHomes();
 
         int getMaxSafeFlow();
 
         unordered_set<int> targets;
         unordered_set<int> homes;
-        vector<int> shuffledHomes;
-
-        // Temp Debug
-        map<int, int> connections;
 
         int numAvenues;
         int numStreets;
@@ -81,8 +60,6 @@ class Graph {
     //private:
         vector<LinkedList*> nodes;
 };
-
-void dumpGraph(Graph* g, unordered_set<int> h);
 
 int main() {
     int avenues;
@@ -93,8 +70,6 @@ int main() {
     cin >> streets;
     cin >> supermarkets;
     cin >> citizens;
-
-    srand(time(NULL));
 
     Graph city(avenues, streets);
 
@@ -111,50 +86,10 @@ int main() {
         city.addHome(a, s);
     }
 
-    Graph copy = city;
+    cout << city.getMaxSafeFlow() << endl;
 
-    city.shuffleHomes();
-    int firstMaxFlow = city.getMaxSafeFlow();
-
-    cout << "First flow was " << firstMaxFlow << ", now running until flow is different." << endl;
-
-    dumpGraph(&city, city.homes);
-
-    int newFlow = firstMaxFlow;
-    int iterations = 0;
-    int div = iterations;
-    vector<int> order;
-    while(firstMaxFlow == newFlow && iterations < 100) {
-        city = copy;
-        city.shuffleHomes();
-        order = city.shuffledHomes;
-        newFlow = city.getMaxSafeFlow();
-        iterations++;
-        if (iterations / 1 > div) {
-            div = iterations / 1;
-            cout << "[" << div << "%]" << endl;
-        }
-    }
-
-    if(iterations == 100) {
-        cout << "Ran 100 iterations, flow stayed the same.";
-        return 0;
-    }
-
-    cout << "New flow is different: First flow = " << firstMaxFlow << ", End flow = " << newFlow << endl;
-
-    cout << "The order the algorithm ran was: ";
-    for(vector<int>::iterator it = order.begin(); it != order.end(); ++it) {
-        cout << *it << " ";
-    }
-    cout << endl;
-    
-    dumpGraph(&city, city.homes);
-
-    return -1;
+    return EXIT_SUCCESS;
 }
-
-// Coordinates
 
 LinkedList::LinkedList() {}
 
@@ -177,8 +112,7 @@ BFSQueue::BFSQueue(BFSNode data)
 Graph::Graph(int avenues, int streets): numAvenues(avenues), numStreets(streets) {
     targets = unordered_set<int>();
     homes = unordered_set<int>();
-    connections = map<int, int>();
-    
+
     // Initialize all node edges to null
     nodes = vector<LinkedList*>(2 * (avenues * streets) + 2);
     fill(nodes.begin(), nodes.end(), nullptr);
@@ -186,9 +120,6 @@ Graph::Graph(int avenues, int streets): numAvenues(avenues), numStreets(streets)
     // Add source and target nodes
     nodes[2 * (avenues*streets)] = nullptr;
     nodes[2 * (avenues*streets) + 1] = nullptr;
-    //matrix = new Status[avenues * streets];
-    // Initialize the matrix
-    //fill(matrix, &(matrix[avenues * streets]), Status::Free);
 }
 
 Graph::~Graph() {
@@ -225,27 +156,6 @@ LinkedList* Graph::getTargetNode() {
 
 int Graph::getTargetNodePos() {
     return 2 * (numAvenues * numStreets) + 1;
-}
-
-void Graph::shuffleHomes() {
-    shuffledHomes = vector<int>();
-    vector<int> homesCopy = vector<int>();
-    for(unordered_set<int>::iterator it = homes.begin(); it != homes.end(); ++it) {
-        homesCopy.push_back(*it);
-    }
-    while(!homesCopy.empty()) {
-        int i = rand() % homesCopy.size();
-        int j = 0;
-        for(vector<int>::iterator it = homesCopy.begin(); it != homesCopy.end(); ++it) {
-            if (i == j) {
-                shuffledHomes.push_back(*it);
-                homesCopy.erase(it);
-                break;
-            } else {
-                j++;
-            }
-        }
-    }
 }
 
 vector<int> findNeighbors(int vertex, Graph* graph) {
@@ -302,20 +212,13 @@ bool visit(BFSQueue* queue, Graph* graph, vector<bool>& visited) {
     // Check if it's either the super source or super target
     if(position->vertex == graph->getSourceNodePos()) {
         // Super source - BFS is beginning
-        /*unordered_set<int> homes = graph->homes;
-        LinkedList* ll = graph->getSourceNode();
-        while(ll != nullptr) {
-            graph->homes.erase(ll->data);
-            ll = ll->next;
-        }*/
-
-        if(graph->shuffledHomes.empty()) {
+        if(graph->homes.empty()) {
             // There are no more augmenting paths, algorithm is over!
             return false;
         } else {
             // Augmenting path; Add it
-            int node = (*(graph->shuffledHomes.begin()));
-            graph->shuffledHomes.erase(graph->shuffledHomes.begin());
+            int node = (*(graph->homes.begin()));
+            graph->homes.erase(graph->homes.begin());
             while(queue->next != nullptr) {
                 queue = queue->next;
             }
@@ -328,28 +231,24 @@ bool visit(BFSQueue* queue, Graph* graph, vector<bool>& visited) {
         // Super target - BFS is over
         //cout << "Super target" << endl;
         BFSNode* trace = position;
-        int targetV = trace->parent->vertex;
         //cout << "Trace: ";
         do {
             int child = trace->vertex;
             //cout << child << " ";
             trace = trace->parent;
-            // If child is connected to parent, it's a residual path; it was
-            // overwritten in the last loop, so now we need to skip it
-            //if(graph->nodes[child] != nullptr && graph->nodes[child]->data == trace->vertex) {
-            // Else we connect the child to the parent
             LinkedList* ll = new LinkedList(child);
+
+            // If we are the super-source, we add a connection instead of replacing
             if(trace->vertex == graph->getSourceNodePos())
                 ll->next = graph->nodes[trace->vertex];
+            // Parent has no connection, so it's a new path
             else if(graph->nodes[trace->vertex] == nullptr)
                 graph->nodes[trace->vertex] = ll;
             else {
-                // Parent has a connection; it's augmenting path
+                // Parent has a connection; this is an augmenting path; replace connection and skip this one
                 graph->nodes[trace->vertex] = ll;
                 trace = trace->parent;
             }
-            if(trace->parent != nullptr && trace->parent->parent == nullptr)
-                graph->connections[trace->vertex] = targetV - 1;
         } while(trace->parent != nullptr);
         //cout << trace->vertex << endl;
 
@@ -405,9 +304,6 @@ bool visit(BFSQueue* queue, Graph* graph, vector<bool>& visited) {
         }
 
         // Remove from the options the current connection, if there's any
-        /*if(graph->nodes[position->vertex] != nullptr) {
-            directions.remove(position->vertex);
-        }*/
         for (vector<int>::iterator iter = directions.begin(); iter != directions.end(); ++iter) {
             //cout << "Neighbor is (" << neighbor.avenue << ", " << neighbor.street << "). Visited is " << visitedVertices[neighbor.avenue * graph->numAvenues + neighbor.street] << endl;
             if(graph->nodes[position->vertex] == nullptr || graph->nodes[position->vertex]->data != *iter) {
@@ -433,111 +329,40 @@ void printQueue(BFSQueue* q) {
     cout << endl;
 }
 
-string indToCoord(int v, Graph* g) {
-    string ret = "(";
-    int a = (v / 2) / g->numStreets + 1;
-    int s = (v / 2) % g->numStreets + 1;
-    return ret + to_string(a) + ", " + to_string(s) + ")";
-}
-
-void dumpGraph(Graph* g, unordered_set<int> origHomes) {
-    cout << "Dumping completed graph..." << endl << endl;
-    cout << "C: " << origHomes.size() << "\t\tS: " << g->targets.size() << endl;
-    cout << "-------------------------------" << endl;
-    cout << "|    Vertex    | Connected to |" << endl;
-    cout << "-------------------------------" << endl;
-    for(unordered_set<int>::iterator it = origHomes.begin(); it != origHomes.end(); ++it) {
-        if(g->nodes[*it] == nullptr) {
-            cout << "| " << *it << " | " << "None" << endl;
-            //cout << "| " << indToCoord(*it, g) << " | " << "None" << endl;
-        } else {
-            int to = g->connections[*it];
-            //cout << "| " << indToCoord(*it, g) << " | "  << indToCoord(to, g) << endl;
-            cout << "| " << *it << " | "  << to << endl;
-        }
-    }
-    cout << "-------------------------------" << endl << endl;
-    cout << "Dumping traces..." << endl << endl;
-    for(unordered_set<int>::iterator it = origHomes.begin(); it != origHomes.end(); ++it) {
-        if(g->nodes[*it] != nullptr) {
-            cout << *it << " -> " << *it << " ";
-            //cout << indToCoord(*it, g) << " -> " << indToCoord(*it, g) << " ";
-            int i = *it;
-            while(i != g->getTargetNodePos()) {
-                i = g->nodes[i]->data;
-                //if(i % 2 == 0)
-                //    cout << indToCoord(i, g) << " ";
-                cout << i << " ";
-            }
-        }
-        cout << endl;
-    }
-
-    cout << "Dumping done" << endl;
-}
-
 int Graph::getMaxSafeFlow() {
-    //bool hasPath = true;
-    int interim = 0;
-
-    while(/*hasPath ||*/ !shuffledHomes.empty()) {
-        //hasPath = false;
+    while(!homes.empty()) {
         BFSQueue* queue = new BFSQueue();
         BFSQueue* head = queue;
 
+        // Initiate a BFSQueue at the super-source
         BFSNode sourceNode = {getSourceNodePos(), nullptr};
         queue->data = sourceNode;
 
         vector<bool> visited = vector<bool>(nodes.size());
         fill(visited.begin(), visited.end(), false);
-        //cout << "BFS augmentation" << endl;
 
-        //bool once = true;
         while(queue != nullptr) {
-            //printQueue(queue);
             if(visit(queue, this, visited)) {
-                //hasPath = true;
-                ++interim;
                 break;
             }
-            /*if(once) {
-                once = false;
-                if(queue->next)
-                cout << "Visiting vertex " << queue->next->data.vertex << "..." << endl;
-            }*/
-            // If, after a single BFS visit, it has no children, it means no augmenting paths exist
-            /*if(head->next == nullptr) {
-                done = true;
-                break;
-            }*/
-            //printQueue(queue);
             queue = queue->next;
         }
 
+        // Queue is empty, so the algorithm is over. Clean up the queue
         while(head != nullptr) {
             BFSQueue* p = head;
             head = head->next;
             delete p;
         }
 
-        //dumpGraph(this, homes);
-
         //printQueue(head);
-        //delete head;
     }
 
+    // Query the number of connections the super-source has
     int connections = 0;
     for (unordered_set<int>::const_iterator iter = targets.begin(); iter != targets.end(); ++iter) {
         if(nodes[*iter] != nullptr) connections++;
     }
-    /*LinkedList* sourceLL = getSourceNode();
-    while(sourceLL != nullptr) {
-        ++connections;
-        sourceLL = sourceLL->next;
-    }*/
 
-    //dumpGraph(this, origHomes);
-
-    //cout << interim << endl;
     return connections;
 }
