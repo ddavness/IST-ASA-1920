@@ -10,6 +10,7 @@
 #include <vector>
 #include <unordered_set>
 #include <map>
+#include <set>
 
 using namespace std;
 
@@ -63,11 +64,13 @@ class Graph {
         BFSNode* getFreeHome();
         //int toIndex(const Coordinates&) const;
         //Coordinates toPos(const int&) const;
+        void shuffleHomes();
 
         int getMaxSafeFlow();
 
         unordered_set<int> targets;
         unordered_set<int> homes;
+        vector<int> shuffledHomes;
 
         // Temp Debug
         map<int, int> connections;
@@ -79,6 +82,8 @@ class Graph {
         vector<LinkedList*> nodes;
 };
 
+void dumpGraph(Graph* g, unordered_set<int> h);
+
 int main() {
     int avenues;
     int streets;
@@ -88,6 +93,8 @@ int main() {
     cin >> streets;
     cin >> supermarkets;
     cin >> citizens;
+
+    srand(time(NULL));
 
     Graph city(avenues, streets);
 
@@ -104,9 +111,47 @@ int main() {
         city.addHome(a, s);
     }
 
-    cout << city.getMaxSafeFlow() << endl;
+    Graph copy = city;
 
-    return EXIT_SUCCESS;
+    city.shuffleHomes();
+    int firstMaxFlow = city.getMaxSafeFlow();
+
+    cout << "First flow was " << firstMaxFlow << ", now running until flow is different." << endl;
+
+    dumpGraph(&city, city.homes);
+
+    int newFlow = firstMaxFlow;
+    int iterations = 0;
+    int div = iterations;
+    vector<int> order;
+    while(firstMaxFlow == newFlow && iterations < 100) {
+        city = copy;
+        city.shuffleHomes();
+        order = city.shuffledHomes;
+        newFlow = city.getMaxSafeFlow();
+        iterations++;
+        if (iterations / 1 > div) {
+            div = iterations / 1;
+            cout << "[" << div << "%]" << endl;
+        }
+    }
+
+    if(iterations == 100) {
+        cout << "Ran 100 iterations, flow stayed the same.";
+        return 0;
+    }
+
+    cout << "New flow is different: First flow = " << firstMaxFlow << ", End flow = " << newFlow << endl;
+
+    cout << "The order the algorithm ran was: ";
+    for(vector<int>::iterator it = order.begin(); it != order.end(); ++it) {
+        cout << *it << " ";
+    }
+    cout << endl;
+    
+    dumpGraph(&city, city.homes);
+
+    return -1;
 }
 
 // Coordinates
@@ -182,6 +227,27 @@ int Graph::getTargetNodePos() {
     return 2 * (numAvenues * numStreets) + 1;
 }
 
+void Graph::shuffleHomes() {
+    shuffledHomes = vector<int>();
+    vector<int> homesCopy = vector<int>();
+    for(unordered_set<int>::iterator it = homes.begin(); it != homes.end(); ++it) {
+        homesCopy.push_back(*it);
+    }
+    while(!homesCopy.empty()) {
+        int i = rand() % homesCopy.size();
+        int j = 0;
+        for(vector<int>::iterator it = homesCopy.begin(); it != homesCopy.end(); ++it) {
+            if (i == j) {
+                shuffledHomes.push_back(*it);
+                homesCopy.erase(it);
+                break;
+            } else {
+                j++;
+            }
+        }
+    }
+}
+
 vector<int> findNeighbors(int vertex, Graph* graph) {
     vector<int> directions;
     if(vertex % 2 == 0) {
@@ -243,13 +309,13 @@ bool visit(BFSQueue* queue, Graph* graph, vector<bool>& visited) {
             ll = ll->next;
         }*/
 
-        if(graph->homes.empty()) {
+        if(graph->shuffledHomes.empty()) {
             // There are no more augmenting paths, algorithm is over!
             return false;
         } else {
             // Augmenting path; Add it
-            int node = (*(graph->homes.begin()));
-            graph->homes.erase(graph->homes.begin());
+            int node = (*(graph->shuffledHomes.begin()));
+            graph->shuffledHomes.erase(graph->shuffledHomes.begin());
             while(queue->next != nullptr) {
                 queue = queue->next;
             }
@@ -414,7 +480,7 @@ int Graph::getMaxSafeFlow() {
     //bool hasPath = true;
     int interim = 0;
 
-    while(/*hasPath ||*/ !homes.empty()) {
+    while(/*hasPath ||*/ !shuffledHomes.empty()) {
         //hasPath = false;
         BFSQueue* queue = new BFSQueue();
         BFSQueue* head = queue;
@@ -454,7 +520,7 @@ int Graph::getMaxSafeFlow() {
             delete p;
         }
 
-        //dumpGraph(this, origHomes);
+        //dumpGraph(this, homes);
 
         //printQueue(head);
         //delete head;
